@@ -1,3 +1,4 @@
+from inspect import ArgSpec
 from multiprocessing.dummy import current_process
 import os
 # comment out below line to enable tensorflow logging outputs
@@ -10,6 +11,7 @@ if len(physical_devices) > 0:
 from absl import app, flags
 from absl.flags import FLAGS
 import core.utils as utils
+import tools.speed_measure as measure
 # from core.yolov4 import filter_boxes
 from tensorflow.python.saved_model import tag_constants
 from core.config import cfg
@@ -91,6 +93,11 @@ def main(_argv):
     
     # custom allowed classes (uncomment line below to customize tracker for only people)
     allowed_classes = ['motorbike', 'car', 'bicycle', 'truck']
+    video_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+    video_heigth = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    ppmX = video_width / FLAGS.distance
+    ppmY = ppmX * video_heigth
+    # pixel_per_metter = frame.shape[1] / FLAGS.distance
 
     # while video is running
     while True:
@@ -102,7 +109,7 @@ def main(_argv):
             print('Video has ended or failed, try a different video format!')
             break
         frame_num +=1
-        pixel_per_metter = frame.shape[1] / FLAGS.distance
+
         # if(frame_num % 3 == 0):
     
         image_data = cv2.resize(frame, (input_size, input_size))
@@ -211,7 +218,7 @@ def main(_argv):
                 # if vihicle is moving
                 if [x1, y1, w1, h1] != [x2, y2, w2, h2]:
                     if (speed[i] is None or speed[i] == 0):
-                        speed[i] = utils.calculate_speed([x1,y1,w1,h1], [x2,y2,w2,h2], fps, pixel_per_metter)
+                        speed[i] = measure.calculate_speed([x1,y1,w1,h1], [x2,y2,w2,h2], fps, ppmX)
 
                     if speed[i] is not None:
                         # draw bbox on screen
