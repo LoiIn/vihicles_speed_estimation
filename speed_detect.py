@@ -37,7 +37,8 @@ flags.DEFINE_boolean('dont_show', False, 'dont show video output')
 flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
 flags.DEFINE_boolean('count', False, 'count objects being tracked on screen')
 flags.DEFINE_float('distance', 8, 'reality of distance')
-flags.DEFINE_integer('frame_skip', 1, 'number of frames skipped for detection')
+flags.DEFINE_integer('line_x', 50, 'define x position of cross line')
+flags.DEFINE_integer('line_y', 250, 'define y position of cross line')
 
 def main(_argv):
     # Definition of the parameters
@@ -93,14 +94,16 @@ def main(_argv):
     
     # custom allowed classes (uncomment line below to customize tracker for only people)
     allowed_classes = ['motorbike', 'car', 'bicycle', 'truck']
+
     video_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
-    video_heigth = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    video_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
     ppmX = video_width / FLAGS.distance
-    ppmY = ppmX * video_heigth
+    ppmY = ppmX * video_height
     # pixel_per_metter = frame.shape[1] / FLAGS.distance
 
     # while video is running
     while True:
+        start_time = time.time()
         return_value, frame = vid.read()
         if return_value:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -109,13 +112,10 @@ def main(_argv):
             print('Video has ended or failed, try a different video format!')
             break
         frame_num +=1
-
-        # if(frame_num % 3 == 0):
     
         image_data = cv2.resize(frame, (input_size, input_size))
         image_data = image_data / 255.
         image_data = image_data[np.newaxis, ...].astype(np.float32)
-        start_time = time.time()
 
         batch_data = tf.constant(image_data)
         pred_bbox = infer(batch_data)
@@ -172,53 +172,55 @@ def main(_argv):
 
         # encode yolo detections and feed to tracker
         features = encoder(frame, bboxes)
-        detections = []
 
-        if(frame_num % FLAGS.frame_skip == 0):
-            print('Frame #: ', frame_num)
-            prevPos = curPos.copy()
-            detections = [Detection(bbox, score, class_name, feature) for bbox, score, class_name, feature in zip(bboxes, scores, names, features)]
+        print('Frame #: ', frame_num)
+        detections = [Detection(bbox, score, class_name, feature) for bbox, score, class_name, feature in zip(bboxes, scores, names, features)]
 
-            #initialize color map
-            cmap = plt.get_cmap('tab20b')
-            colors = [cmap(i)[:3] for i in np.linspace(0, 1, 20)]
+        #initialize color map
+        cmap = plt.get_cmap('tab20b')
+        colors = [cmap(i)[:3] for i in np.linspace(0, 1, 20)]
 
-            # run non-maxima supression
-            boxs = np.array([d.tlwh for d in detections])
-            scores = np.array([d.confidence for d in detections])
-            classes = np.array([d.class_name for d in detections])
-            indices = preprocessing.non_max_suppression(boxs, classes, nms_max_overlap, scores)        
-            detections = [detections[i] for i in indices]
+        # run non-maxima supression
+        boxs = np.array([d.tlwh for d in detections])
+        scores = np.array([d.confidence for d in detections])
+        classes = np.array([d.class_name for d in detections])
+        indices = preprocessing.non_max_suppression(boxs, classes, nms_max_overlap, scores)        
+        detections = [detections[i] for i in indices]      
 
-            # calculate frames per second of running detections
-            fps = 1.0 / (time.time() - start_time)
-            print("FPS: %.2f" % fps)       
+        # Call the tracker
+        tracker.predict()
+        tracker.update(detections)
 
-            # Call the tracker
-            tracker.predict()
-            tracker.update(detections)
+        prevPos = curPos.copy()
 
-            # update tracks
-            for track in tracker.tracks:
-                if not track.is_confirmed() or track.time_since_update > 1:
-                    continue 
-                bbox = track.to_tlbr()
-                class_name = track.get_class()
-            
+        # update tracks
+        for track in tracker.tracks:
+            if not track.is_confirmed() or track.time_since_update > 1:
+                continue 
+            bbox = track.to_tlbr()
+            class_name = track.get_class()
+        
             # get current posstion
-                if FLAGS.info:
-                    curPos[track.track_id] = [bbox[0], bbox[1], bbox[2], bbox[3]]
+            if FLAGS.info:
+                curPos[track.track_id] = [bbox[0], bbox[1], bbox[2], bbox[3]]
+        
+        # calculate frames per second of running detections
+        # fps = 1.0 / (time.time() - start_time)
+        # print("FPS: %.2f" % fps) 
+        _time = time.time() - start_time
 
-            for i in prevPos.keys():
-                [x1, y1, w1, h1] = prevPos[i]
-                [x2, y2, w2, h2] = curPos[i]
+        for i in prevPos.keys():
+            [x1, y1, w1, h1] = prevPos[i]
+            [x2, y2, w2, h2] = curPos[i]
 
-                prevPos[i] = [x2, y2, w2, h2]
+            prevPos[i] = [x2, y2, w2, h2]
 
-                # if vihicle is moving
-                if [x1, y1, w1, h1] != [x2, y2, w2, h2]:
+            # if vihicle is moving
+            if [x1, y1, w1, h1] != [x2, y2, w2, h2]:
+                centerX = int((x2 + (x2+w2))/2.0)
+                if centerX >= FLAGS.line_x and centerX <= video_width - FLAGS.line_x:
                     if (speed[i] is None or speed[i] == 0):
-                        speed[i] = measure.calculate_speed([x1,y1,w1,h1], [x2,y2,w2,h2], fps, ppmX)
+                        speed[i] = measure.calculate_speed_4([x1,y1,w1,h1], [x2,y2,w2,h2], _time, 1.6, 5.4)
 
                     if speed[i] is not None:
                         # draw bbox on screen
@@ -229,7 +231,8 @@ def main(_argv):
                         cv2.putText(frame,"v" + str(i) + "-" + str(speed[i]) + "km/h",(int(x2), int(y2)-10),0, 0.75, (255,255,255),2)
                         print(speed[i])
 
-
+        cv2.line(frame, (FLAGS.line_x, FLAGS.line_y), (FLAGS.line_x, int(video_height)), (0,0,255), 2)
+        cv2.line(frame, (int(video_width)-FLAGS.line_x, FLAGS.line_y), (int(video_width)-FLAGS.line_x, int(video_height)), (0,0,255), 2)
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         
