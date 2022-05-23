@@ -97,8 +97,9 @@ def main(_argv):
 
     video_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
     video_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    ppmX = video_width / FLAGS.distance
-    ppmY = ppmX * video_height
+    # ppmX = video_width / FLAGS.distance
+    # print(video_width)
+    # ppmY = ppmX * video_height
     # pixel_per_metter = frame.shape[1] / FLAGS.distance
 
     # while video is running
@@ -165,7 +166,7 @@ def main(_argv):
         if FLAGS.count:
             cv2.putText(frame, "Objects being tracked: {}".format(count), (5, 35), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255, 0), 2)
             print("Objects being tracked: {}".format(count))
-            
+        
         # delete detections that are not in allowed_classes
         bboxes = np.delete(bboxes, deleted_indx, axis=0)
         scores = np.delete(scores, deleted_indx, axis=0)
@@ -198,16 +199,14 @@ def main(_argv):
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue 
             bbox = track.to_tlbr()
+            # curPos[track.track_id] = [bbox[0], bbox[1], bbox[2], bbox[3]]
+            curPos[track.track_id] = utils.format_center_point(bbox)
             class_name = track.get_class()
-        
-            # get current posstion
-            if FLAGS.info:
-                curPos[track.track_id] = [bbox[0], bbox[1], bbox[2], bbox[3]]
-        
+
         # calculate frames per second of running detections
-        # fps = 1.0 / (time.time() - start_time)
+        fps = 1.0 / (time.time() - start_time)
         # print("FPS: %.2f" % fps) 
-        _time = time.time() - start_time
+        # _time = time.time() - start_time
 
         for i in prevPos.keys():
             [x1, y1, w1, h1] = prevPos[i]
@@ -220,14 +219,14 @@ def main(_argv):
                 centerX = int((x2 + (x2+w2))/2.0)
                 if centerX >= FLAGS.line_x and centerX <= video_width - FLAGS.line_x:
                     if (speed[i] is None or speed[i] == 0):
-                        speed[i] = measure.calculate_speed_4([x1,y1,w1,h1], [x2,y2,w2,h2], _time, 1.6, 5.4)
+                        speed[i] = measure.calculate_speed([x1,y1,w1,h1], [x2,y2,w2,h2], fps)
 
                     if speed[i] is not None:
                         # draw bbox on screen
                         color = colors[i % len(colors)]
                         color = [j * 255 for j in color]
-                        cv2.rectangle(frame, (int(x2), int(y2)), (int(w2), int(h2)), color, 2)
-                        cv2.rectangle(frame, (int(x2), int(y2)), (int(w2)+(len(class_name)+len(str(i)))*17, int(y2)), color, -1)
+                        cv2.rectangle(frame, (int(x2-w2/2), int(y2-h2/2)), (int(x2+w2/2), int(y2+h2/2)), color, 2)
+                        cv2.rectangle(frame, (int(x2-w2/2), int(y2-h2/2)), (int(w2)+(len(class_name)+len(str(i)))*17, int(y2)), color, 2)
                         cv2.putText(frame,"v" + str(i) + "-" + str(speed[i]) + "km/h",(int(x2), int(y2)-10),0, 0.75, (255,255,255),2)
                         print(speed[i])
 

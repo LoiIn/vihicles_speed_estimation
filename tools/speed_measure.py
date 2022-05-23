@@ -2,12 +2,14 @@ import numpy as np
 import math
 
 def calculate_speed(prevPos, curPos, fps):
-    pixel_per_metter = curPos[2] / 1.5
+    # print(curPos)
+    _asRt = curPos[3] /1.2
+    
     # distance per pixcel
     distance_in_pixels = math.sqrt(math.pow(curPos[0] - prevPos[0], 2) + math.pow(curPos[1] - prevPos[1], 2))
 
     # distance per met
-    distance_in_met = distance_in_pixels / pixel_per_metter
+    distance_in_met = distance_in_pixels / _asRt
 
     return round(distance_in_met * 3.6 * fps, 2)
 
@@ -26,13 +28,13 @@ def calculate_speed_3(prevPos, curPos, fps, ppmX, ppmY):
 
     return round(_distance * 3.6 * fps, 0)
 
-def calculate_speed_4(prevPos, curPos, time, height, far, ppmX):
+def calculate_speed_4(prevPos, curPos, time, height, far):
     _angle = np.arctan(height / far)
     u1 = prevPos[0]
     u2 = curPos[0]
     v1 = prevPos[1]
     v2 = curPos[1]
-    _asRt = curPos[2] / ppmX
+    _asRt = curPos[2] / 1.5
 
     _A = math.pow(v2-v1, 2) + math.pow((u1-u2)*math.sin(_angle), 2)
     _B = 2 * (u1-u2) * (u1*v2-u2*v1)*math.sin(_angle)*math.cos(_angle)
@@ -48,4 +50,4 @@ def calculate_speed_4(prevPos, curPos, time, height, far, ppmX):
 
     _distance = height * math.sqrt(_above / _under)
 
-    return round(_distance / time * 3.6, 2)
+    return round((_distance / time) * 3.6, 2)
