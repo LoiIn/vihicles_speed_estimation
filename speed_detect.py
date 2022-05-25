@@ -205,8 +205,8 @@ def main(_argv):
             bbox = track.to_tlbr()
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
-            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2])+(len(class_name)+len(str(i)))*17, int(bbox[3])), color, 2)
-            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2])+(len(class_name)+len(str(i)))*17, int(bbox[3])), color, 2)
+            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
+            # cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2])+(len(class_name)+len(str(i)))*17, int(bbox[3])), color, 2)
             class_name = track.get_class()
             curPos[track.track_id] = SpeedAbleObject(track.track_id, bbox, frame_num, class_name)
 
