@@ -11,7 +11,7 @@ if len(physical_devices) > 0:
 from absl import app, flags
 from absl.flags import FLAGS
 import core.utils as utils
-import tools.speed_measure as measure
+import speed_measure.calculate as measure
 # from core.yolov4 import filter_boxes
 from tensorflow.python.saved_model import tag_constants
 from core.config import cfg
@@ -36,9 +36,11 @@ flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_boolean('dont_show', False, 'dont show video output')
 flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
 flags.DEFINE_boolean('count', False, 'count objects being tracked on screen')
-flags.DEFINE_float('distance', 8, 'reality of distance')
+# flags.DEFINE_float('distance', 8, 'reality of distance')
 flags.DEFINE_integer('line_x', 50, 'define x position of cross line')
 flags.DEFINE_integer('line_y', 250, 'define y position of cross line')
+
+from speed_measure.speedAbleObject import SpeedAbleObject
 
 def main(_argv):
     # Definition of the parameters
@@ -71,13 +73,14 @@ def main(_argv):
         vid = cv2.VideoCapture(video_path)
 
     out = None
+    _fps = int(vid.get(cv2.CAP_PROP_FPS))
 
     # get video ready to save locally if flag is set
     if FLAGS.output:
         # by default VideoCapture returns float instead of int
         width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = int(vid.get(cv2.CAP_PROP_FPS))
+        fps = _fps
         codec = cv2.VideoWriter_fourcc(*FLAGS.output_format)
         out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
 
@@ -93,7 +96,7 @@ def main(_argv):
     # allowed_classes = list(class_names.values())
     
     # custom allowed classes (uncomment line below to customize tracker for only people)
-    allowed_classes = ['motorbike', 'car', 'bicycle', 'truck']
+    allowed_classes = ['motorbike', 'car', 'bicycle']
 
     video_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
     video_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -112,7 +115,7 @@ def main(_argv):
         else:
             print('Video has ended or failed, try a different video format!')
             break
-        frame_num +=1
+        frame_num += 1
     
         image_data = cv2.resize(frame, (input_size, input_size))
         image_data = image_data / 255.
@@ -192,46 +195,49 @@ def main(_argv):
         tracker.predict()
         tracker.update(detections)
 
-        prevPos = curPos.copy()
-
+        if (frame_num % _fps == 0):
+            prevPos = curPos.copy()
+      
         # update tracks
         for track in tracker.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue 
             bbox = track.to_tlbr()
-            # curPos[track.track_id] = [bbox[0], bbox[1], bbox[2], bbox[3]]
-            curPos[track.track_id] = utils.format_center_point(bbox)
+            color = colors[track.track_id % len(colors)]
+            color = [j * 255 for j in color]
+            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2])+(len(class_name)+len(str(i)))*17, int(bbox[3])), color, 2)
+            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2])+(len(class_name)+len(str(i)))*17, int(bbox[3])), color, 2)
             class_name = track.get_class()
+            curPos[track.track_id] = SpeedAbleObject(track.track_id, bbox, frame_num, class_name)
 
-        # calculate frames per second of running detections
-        fps = 1.0 / (time.time() - start_time)
+        # fps = 1.0 / (time.time() - start_time)
         # print("FPS: %.2f" % fps) 
         # _time = time.time() - start_time
 
         for i in prevPos.keys():
-            [x1, y1, w1, h1] = prevPos[i]
-            [x2, y2, w2, h2] = curPos[i]
+            [x1, y1, w1, h1] = prevPos[i].bbox
+            [x2, y2, w2, h2] = curPos[i].bbox
+            _time = (curPos[i].timestamp - prevPos[i].timestamp) / _fps
+            obj_height = curPos[i].object_height
 
-            prevPos[i] = [x2, y2, w2, h2]
+            prevPos[i].bbox = [x2, y2, w2, h2]
 
             # if vihicle is moving
             if [x1, y1, w1, h1] != [x2, y2, w2, h2]:
-                centerX = int((x2 + (x2+w2))/2.0)
-                if centerX >= FLAGS.line_x and centerX <= video_width - FLAGS.line_x:
+                if x1 >= FLAGS.line_x and x1 <= video_width - FLAGS.line_x:
                     if (speed[i] is None or speed[i] == 0):
-                        speed[i] = measure.calculate_speed([x1,y1,w1,h1], [x2,y2,w2,h2], fps)
+                        # speed[i] = measure.calculate_speed([x1,y1,w1,h1], [x2,y2,w2,h2], fps)
+                        speed[i] = measure.calculate_speed_3([x1,y1,w1,h1], [x2,y2,w2,h2], _time, obj_height)
 
                     if speed[i] is not None:
                         # draw bbox on screen
                         color = colors[i % len(colors)]
                         color = [j * 255 for j in color]
-                        cv2.rectangle(frame, (int(x2-w2/2), int(y2-h2/2)), (int(x2+w2/2), int(y2+h2/2)), color, 2)
-                        cv2.rectangle(frame, (int(x2-w2/2), int(y2-h2/2)), (int(w2)+(len(class_name)+len(str(i)))*17, int(y2)), color, 2)
-                        cv2.putText(frame,"v" + str(i) + "-" + str(speed[i]) + "km/h",(int(x2), int(y2)-10),0, 0.75, (255,255,255),2)
+                        cv2.putText(frame,"v" + str(i) + "-" + str(speed[i]) + "km/h",(int(x2-w2/2), int(y2-h2/2)-10),0, 0.75, (255,255,255),2)
                         print(speed[i])
 
-        cv2.line(frame, (FLAGS.line_x, FLAGS.line_y), (FLAGS.line_x, int(video_height)), (0,0,255), 2)
-        cv2.line(frame, (int(video_width)-FLAGS.line_x, FLAGS.line_y), (int(video_width)-FLAGS.line_x, int(video_height)), (0,0,255), 2)
+        # cv2.line(frame, (FLAGS.line_x, FLAGS.line_y), (FLAGS.line_x, int(video_height)), (0,0,255), 2)
+        # cv2.line(frame, (int(video_width)-FLAGS.line_x, FLAGS.line_y), (int(video_width)-FLAGS.line_x, int(video_height)), (0,0,255), 2)
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         
