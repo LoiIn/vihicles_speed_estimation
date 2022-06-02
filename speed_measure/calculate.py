@@ -45,7 +45,7 @@ def calculate_per_distance(prevPos, curPos):
 
 def calculate_speed_4(_obj, fps):
     estimatedSpeeds = []
-    if _obj.lastPoint:
+    if _obj.lastPoint and not _obj.estimated:
         for (i, j) in _obj.points:
             d = calculate_per_distance(_obj.position[i], _obj.position[j])
             frames = abs(_obj.timestamp[i] - _obj.timestamp[j])
@@ -58,3 +58,5 @@ def calculate_speed_4(_obj, fps):
 
     if len(estimatedSpeeds):
         _obj.calculate_speed(estimatedSpeeds)
+
+    # _obj.estimated = True

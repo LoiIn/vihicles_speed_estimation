@@ -80,8 +80,8 @@ def main(_argv):
     _flags = {"A": 0, "B": 0, "C": 0, "D": 0}
     _flags['A'] = FLAGS.A_point
     _flags['B'] = FLAGS.A_point + _estimated_distance / 3
-    _flags['C'] = FLAGS.B_point + _estimated_distance / 3
-    _flags['C'] = _width - FLAGS.A_point
+    _flags['C'] = FLAGS.A_point + 2* _estimated_distance / 3
+    _flags['D'] = _width - FLAGS.A_point
 
     # get video ready to save locally if flag is set
     if FLAGS.output:
@@ -211,11 +211,11 @@ def main(_argv):
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
             
-            if track.track_id not in objSpeed:
-                centroids = format_center_point(bbox)            
-                objSpeed[track.track_id] = SpeedAbleObject(track.track_id, centroids, color, _flags)
+            centroid = format_center_point(bbox)
+            if track.track_id not in objSpeed:            
+                objSpeed[track.track_id] = SpeedAbleObject(track.track_id, centroid, color, _flags)
             else:
-                objSpeed[track.track_id].updateSpeedObject( bbox, frame_idx)
+                objSpeed[track.track_id].updateSpeedObject(bbox, frame_idx)
             
             measure.calculate_speed_4( objSpeed[track.track_id], _fps)
             # _i = track.track_id
