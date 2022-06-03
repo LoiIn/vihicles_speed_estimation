@@ -43,7 +43,7 @@ def calculate_per_distance(prevPos, curPos):
     d = math.sqrt(math.pow(curPos[0] - prevPos[0], 2) + math.pow(curPos[1] - prevPos[1], 2))
     return d
 
-def calculate_speed_4(_obj, fps):
+def calculate_speed_4(_obj, fps, asRt):
     estimatedSpeeds = []
     if _obj.lastPoint and not _obj.estimated:
         for (i, j) in _obj.points:
@@ -54,9 +54,9 @@ def calculate_speed_4(_obj, fps):
                 continue
 
             speed = d / t
+            _obj.speeds[i+j] = speed
             estimatedSpeeds.append(speed)
 
     if len(estimatedSpeeds):
-        _obj.calculate_speed(estimatedSpeeds)
-
-    # _obj.estimated = True
+        _obj.calculate_speed(estimatedSpeeds, asRt)
+        _obj.estimated = True

@@ -38,10 +38,12 @@ flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_boolean('dont_show', False, 'dont show video output')
 flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
 flags.DEFINE_boolean('count', False, 'count objects being tracked on screen')
-# flags.DEFINE_float('distance', 8, 'reality of distance')
+flags.DEFINE_float('distance', None, 'reality of distance')
 flags.DEFINE_integer('A_point', 10, 'define x position of cross line')
+flags.DEFINE_string('csv', './csv/data.csv', 'csv file to save result')
 
 from speed_measure.speedAbleObject import SpeedAbleObject
+import pandas as pd
 
 def main(_argv):
     # Definition of the parameters
@@ -92,7 +94,15 @@ def main(_argv):
         codec = cv2.VideoWriter_fourcc(*FLAGS.output_format)
         out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
 
-    objSpeed = { }
+    objSpeed = {}
+    csv_data = {
+        "ID" : [],
+        "ClassName" : [],
+        "Speed" : [],
+        "Speeds": []
+        # "Timestamp": [],
+        # "Position": []
+    }
     frame_idx = 0
     # prevPos = {}
     # curPos = {}
@@ -204,26 +214,41 @@ def main(_argv):
         # obj_time = time.time()
         # update tracks
         for track in tracker.tracks:
+            _i = track.track_id
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue 
             bbox = track.to_tlbr()
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
+            cv2.putText(frame,"v" + str(_i),(int(bbox[0]), int(bbox[1]) - 10),0, 0.75, color,2)
             
             centroid = format_center_point(bbox)
-            if track.track_id not in objSpeed:            
-                objSpeed[track.track_id] = SpeedAbleObject(track.track_id, centroid, color, _flags)
+            if _i not in objSpeed:            
+                objSpeed[_i] = SpeedAbleObject(_i, centroid, color, _flags)
             else:
-                objSpeed[track.track_id].updateSpeedObject(bbox, frame_idx)
+                objSpeed[_i].updateSpeedObject(bbox, frame_idx)
             
-            measure.calculate_speed_4( objSpeed[track.track_id], _fps)
-            # _i = track.track_id
-            # if objSpeed[_i].speed is not None: 
-            #     x, y, w, h = objSpeed[_i].bbox
-            #     cv2.putText(frame,"v" + str(i) + "-" + str(objSpeed[_i].speed) + "km/h",(int(x-w/2), int(y-h/2)-10),0, 0.75, objSpeed[_i].color,2)
+            if FLAGS.distance is not None:
+                measure.calculate_speed_4( objSpeed[_i], _fps, _width/FLAGS.distance)
+            else:
+                measure.calculate_speed_4( objSpeed[_i], _fps, None)
+
+            if objSpeed[_i].speed is not None: 
+                csv_data['ID'].append(_i)
+                csv_data['ClassName'].append(track.get_class())
+                csv_data["Speed"].append(objSpeed[_i].speed)
+                # csv_data["Timestamp"].append(objSpeed[_i].timestamp)
+                # csv_data["Position"].append(objSpeed[_i].position)
+                csv_data["Speeds"].append(objSpeed[_i].speeds)
+                # x, y, w, h = objSpeed[_i].bbox
+                # cv2.putText(frame,"v" + str(i) + "-" + str(objSpeed[_i].speed) + "km/h",(int(_width/2-w/2), int(y-h/2)-10),0, 0.75, objSpeed[_i].color,2)
             
-            print(objSpeed[track.track_id].speed)
+            # print(_i)
+            # print(objSpeed[_i].position)
+            # print(objSpeed[_i].timestamp)
+            # print(objSpeed[_i].speed)
+            # print(objSpeed[_i].scale)
             # class_name = track.get_class()
             # curPos[track.track_id] = SpeedAbleObject(track.track_id, bbox, frame_num, class_name, obj_time)
             
@@ -278,6 +303,11 @@ def main(_argv):
         if FLAGS.output:
             out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
+    if FLAGS.csv:
+        # _storage = FLAGS.csv
+        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Timestamp", "Position"])
+        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds"])
+        df.to_csv(r'test.csv', index = False, header = True)
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
