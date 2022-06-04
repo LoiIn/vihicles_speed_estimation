@@ -215,29 +215,29 @@ def main(_argv):
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
-            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
             
             centroid = format_center_point(bbox)
             if _i not in objSpeed:            
                 objSpeed[_i] = SpeedAbleObject(_i, centroid, color, _flags)
             else:
-                objSpeed[_i].updateSpeedObject(bbox, frame_idx)
+                objSpeed[_i].update(bbox, frame_idx)
             
             if FLAGS.distance is not None:
-                measure.calculate_speed_4( objSpeed[_i], _fps, _width/FLAGS.distance, FLAGS.start_time)
+                measure.calculate_speed( objSpeed[_i], _fps, _width/FLAGS.distance, FLAGS.start_time)
             else:
-                measure.calculate_speed_4( objSpeed[_i], _fps, None, FLAGS.start_time)
+                measure.calculate_speed( objSpeed[_i], _fps, None, FLAGS.start_time)
             
             if objSpeed[_i].speeds["EF"] is not None:
-                cv2.putText(frame,str(objSpeed[_i].speeds["EF"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+                cv2.putText(frame,str(objSpeed[_i].speeds["EF"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
             elif objSpeed[_i].speeds["DE"] is not None:
-                cv2.putText(frame,str(objSpeed[_i].speeds["DE"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+                cv2.putText(frame,str(objSpeed[_i].speeds["DE"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
             elif objSpeed[_i].speeds["CD"] is not None:
-                cv2.putText(frame,str(objSpeed[_i].speeds["CD"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+                cv2.putText(frame,str(objSpeed[_i].speeds["CD"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
             elif objSpeed[_i].speeds["BC"] is not None:
-                cv2.putText(frame,str(objSpeed[_i].speeds["BC"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+                cv2.putText(frame,str(objSpeed[_i].speeds["BC"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
             elif objSpeed[_i].speeds["AB"] is not None:
-                cv2.putText(frame,str(objSpeed[_i].speeds["AB"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+                cv2.putText(frame,str(objSpeed[_i].speeds["AB"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
             
             if objSpeed[_i].speed is not None: 
                 csv_data['ID'].append(_i)
@@ -247,8 +247,9 @@ def main(_argv):
                 csv_data["Position"].append(objSpeed[_i].position)
                 csv_data["Timestamp"].append(objSpeed[_i].timestamp)
             
-        # cv2.line(frame, (FLAGS.line_x, FLAGS.line_y), (FLAGS.line_x, int(video_height)), (0,0,255), 2)
-        # cv2.line(frame, (int(video_width)-FLAGS.line_x, FLAGS.line_y), (int(video_width)-FLAGS.line_x, int(video_height)), (0,0,255), 2)
+        for f in flags:
+            cv2.line(frame, (flags[f], 0), (flags[f], int(video_height)), (0,0,255), 2)
+
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         

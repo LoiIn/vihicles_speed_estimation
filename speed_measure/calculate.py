@@ -23,5 +23,5 @@ def calculate_speed(_obj, fps, asRt, start_time):
             estimatedSpeeds.append(speed * 3.6 / _asRt)
 
     if len(estimatedSpeeds) == 5:
-        _obj.calculate_speed(estimatedSpeeds)
+        _obj.calculate_average_speed(estimatedSpeeds)
         _obj.estimated = True

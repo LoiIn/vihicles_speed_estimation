@@ -34,8 +34,11 @@ def main(_argv):
         success2, frame2 = vid2.read()
 
         if success1:
-            frame1 = cv2.resize(frame1, (_w, _h))
-            frame2 = cv2.resize(frame2, (_w, _h))
+            try: 
+                frame1 = cv2.resize(frame1, (_w, _h))
+                frame2 = cv2.resize(frame2, (_w, _h))
+            except:
+                break
         else:
             print('Video has ended!')
             break

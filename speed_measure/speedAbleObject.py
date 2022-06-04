@@ -17,7 +17,7 @@ class SpeedAbleObject:
         self.estimated = False
         self.speed = None
 
-    def updateSpeedObject(self, centroid, frame_num):
+    def update(self, centroid, frame_num):
         self.bbox = centroid
         self.scale = centroid[2] / 1.908
         if not self.estimated:
@@ -99,7 +99,7 @@ class SpeedAbleObject:
                         self.timestamp["F"] = frame_num
                         self.lastPoint = True
         
-    def calculate_speed(self, estimatedSpeeds):
+    def calculate_average_speed(self, estimatedSpeeds):
         avera_speed = np.average(estimatedSpeeds)
         
         self.speed = round(avera_speed, 1)
