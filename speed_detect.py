@@ -41,6 +41,7 @@ flags.DEFINE_boolean('count', False, 'count objects being tracked on screen')
 flags.DEFINE_float('distance', None, 'reality of distance')
 flags.DEFINE_integer('A_point', 10, 'define x position of cross line')
 flags.DEFINE_float('start_time', 0, 'time start at real world')
+flags.DEFINE_string('csv', None, 'Path to save csv file')
 
 from speed_measure.speedAbleObject import SpeedAbleObject
 import pandas as pd
@@ -248,8 +249,8 @@ def main(_argv):
                 csv_data["Position"].append(objSpeed[_i].position)
                 csv_data["Timestamp"].append(objSpeed[_i].timestamp)
             
-        for f in flags:
-            cv2.line(frame, (flags[f], 0), (flags[f], _height), (0,0,255), 2)
+        for f in _flags:
+            cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
 
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -262,8 +263,10 @@ def main(_argv):
             out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
 
-    df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Position", "Timestamp"])
-    df.to_csv(r'test.csv', index = False, header = True)
+    if FLAGS.csv:
+        path_csv = FLAGS.csv
+        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Position", "Timestamp"])
+        df.to_csv(path_csv, index = False, header = True)
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
