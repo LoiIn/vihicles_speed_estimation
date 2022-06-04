@@ -78,6 +78,7 @@ def main(_argv):
     out = None
     _fps = int(vid.get(cv2.CAP_PROP_FPS))
     _width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
+    _height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
     _estimated_distance = _width - FLAGS.A_point * 2
     _flags = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0}
     _flags['A'] = FLAGS.A_point
@@ -91,7 +92,7 @@ def main(_argv):
     if FLAGS.output:
         # by default VideoCapture returns float instead of int
         width = _width
-        height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        height = _height
         fps = _fps
         codec = cv2.VideoWriter_fourcc(*FLAGS.output_format)
         out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
@@ -248,7 +249,7 @@ def main(_argv):
                 csv_data["Timestamp"].append(objSpeed[_i].timestamp)
             
         for f in flags:
-            cv2.line(frame, (flags[f], 0), (flags[f], int(video_height)), (0,0,255), 2)
+            cv2.line(frame, (flags[f], 0), (flags[f], _height), (0,0,255), 2)
 
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
