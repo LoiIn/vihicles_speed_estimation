@@ -40,7 +40,7 @@ flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
 flags.DEFINE_boolean('count', False, 'count objects being tracked on screen')
 flags.DEFINE_float('distance', None, 'reality of distance')
 flags.DEFINE_integer('A_point', 10, 'define x position of cross line')
-flags.DEFINE_string('csv', './csv/data.csv', 'csv file to save result')
+flags.DEFINE_float('start_time', 0, 'time start at real world')
 
 from speed_measure.speedAbleObject import SpeedAbleObject
 import pandas as pd
@@ -79,11 +79,13 @@ def main(_argv):
     _fps = int(vid.get(cv2.CAP_PROP_FPS))
     _width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     _estimated_distance = _width - FLAGS.A_point * 2
-    _flags = {"A": 0, "B": 0, "C": 0, "D": 0}
+    _flags = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0}
     _flags['A'] = FLAGS.A_point
-    _flags['B'] = FLAGS.A_point + _estimated_distance / 3
-    _flags['C'] = FLAGS.A_point + 2* _estimated_distance / 3
-    _flags['D'] = _width - FLAGS.A_point
+    _flags['B'] = FLAGS.A_point + _estimated_distance / 5
+    _flags['C'] = FLAGS.A_point + 2* _estimated_distance / 5
+    _flags['D'] = FLAGS.A_point + 3* _estimated_distance / 5
+    _flags['E'] = FLAGS.A_point + 4* _estimated_distance / 5
+    _flags['F'] = _width - FLAGS.A_point
 
     # get video ready to save locally if flag is set
     if FLAGS.output:
@@ -99,14 +101,11 @@ def main(_argv):
         "ID" : [],
         "ClassName" : [],
         "Speed" : [],
-        "Speeds": []
-        # "Timestamp": [],
-        # "Position": []
+        "Speeds": [],
+        "Position": [],
+        "Timestamp": []
     }
     frame_idx = 0
-    # prevPos = {}
-    # curPos = {}
-    # speed = [None] * 1000
 
     # read in all class names from config
     class_names = utils.read_class_names(cfg.YOLO.CLASSES)
@@ -115,7 +114,7 @@ def main(_argv):
     # allowed_classes = list(class_names.values())
     
     # custom allowed classes (uncomment line below to customize tracker for only people)
-    allowed_classes = ['motorbike']
+    allowed_classes = ['motorbike', 'car']
 
     # while video is running
     while True:
@@ -189,7 +188,7 @@ def main(_argv):
         # encode yolo detections and feed to tracker
         features = encoder(frame, bboxes)
 
-        print('Frame #: ', frame_idx)
+        # print('Frame #: ', frame_idx)
         detections = [Detection(bbox, score, class_name, feature) for bbox, score, class_name, feature in zip(bboxes, scores, names, features)]
 
         #initialize color map
@@ -207,11 +206,6 @@ def main(_argv):
         tracker.predict()
         tracker.update(detections)
 
-        # if (frame_idx % _fps == 0):
-        #     prevPos = curPos.copy()
-        # prevPos = curPos.copy()
-      
-        # obj_time = time.time()
         # update tracks
         for track in tracker.tracks:
             _i = track.track_id
@@ -221,7 +215,7 @@ def main(_argv):
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
-            cv2.putText(frame,"v" + str(_i),(int(bbox[0]), int(bbox[1]) - 10),0, 0.75, color,2)
+            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
             
             centroid = format_center_point(bbox)
             if _i not in objSpeed:            
@@ -230,67 +224,29 @@ def main(_argv):
                 objSpeed[_i].updateSpeedObject(bbox, frame_idx)
             
             if FLAGS.distance is not None:
-                measure.calculate_speed_4( objSpeed[_i], _fps, _width/FLAGS.distance)
+                measure.calculate_speed_4( objSpeed[_i], _fps, _width/FLAGS.distance, FLAGS.start_time)
             else:
-                measure.calculate_speed_4( objSpeed[_i], _fps, None)
-
+                measure.calculate_speed_4( objSpeed[_i], _fps, None, FLAGS.start_time)
+            
+            if objSpeed[_i].speeds["EF"] is not None:
+                cv2.putText(frame,str(objSpeed[_i].speeds["EF"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+            elif objSpeed[_i].speeds["DE"] is not None:
+                cv2.putText(frame,str(objSpeed[_i].speeds["DE"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+            elif objSpeed[_i].speeds["CD"] is not None:
+                cv2.putText(frame,str(objSpeed[_i].speeds["CD"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+            elif objSpeed[_i].speeds["BC"] is not None:
+                cv2.putText(frame,str(objSpeed[_i].speeds["BC"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+            elif objSpeed[_i].speeds["AB"] is not None:
+                cv2.putText(frame,str(objSpeed[_i].speeds["AB"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 1.25, (255,255,255),2)
+            
             if objSpeed[_i].speed is not None: 
                 csv_data['ID'].append(_i)
                 csv_data['ClassName'].append(track.get_class())
                 csv_data["Speed"].append(objSpeed[_i].speed)
-                # csv_data["Timestamp"].append(objSpeed[_i].timestamp)
-                # csv_data["Position"].append(objSpeed[_i].position)
                 csv_data["Speeds"].append(objSpeed[_i].speeds)
-                # x, y, w, h = objSpeed[_i].bbox
-                # cv2.putText(frame,"v" + str(i) + "-" + str(objSpeed[_i].speed) + "km/h",(int(_width/2-w/2), int(y-h/2)-10),0, 0.75, objSpeed[_i].color,2)
+                csv_data["Position"].append(objSpeed[_i].position)
+                csv_data["Timestamp"].append(objSpeed[_i].timestamp)
             
-            # print(_i)
-            # print(objSpeed[_i].position)
-            # print(objSpeed[_i].timestamp)
-            # print(objSpeed[_i].speed)
-            # print(objSpeed[_i].scale)
-            # class_name = track.get_class()
-            # curPos[track.track_id] = SpeedAbleObject(track.track_id, bbox, frame_num, class_name, obj_time)
-            
-            
-
-        # fps = 1.0 / (time.time() - start_time)
-        # print("FPS: %.2f" % fps) 
-
-        # for i in objSpeed.keys():
-        #     color = colors[i % len(colors)]
-        #     color = [j * 255 for j in color]
-        #     x, y, w, h = objSpeed[i].bbox
-        #     if objSpeed[i].speed is not None: 
-        #         cv2.putText(frame,"v" + str(i) + "-" + str(objSpeed[i].speed) + "km/h",(int(x-w/2), int(y-h/2)-10),0, 0.75, objSpeed[i].color,2)
-
-        # for i in prevPos.keys():
-        #     [x1, y1, w1, h1] = prevPos[i].bbox
-        #     [x2, y2, w2, h2] = curPos[i].bbox
-        #     _time = (curPos[i].timestamp - prevPos[i].timestamp) / _fps
-        #     # _time = curPos[i].obj_time - prevPos[i].obj_time
-        #     # obj_height = curPos[i].object_height
-        #     # obj_width = curPos[i].object_width
-        #     obj_width = 1.85
-        #     obj_height = 1.1
-
-        #     prevPos[i].bbox = [x2, y2, w2, h2]
-
-        #     # if vihicle is moving
-        #     if [x1, y1, w1, h1] != [x2, y2, w2, h2]:
-        #         # if x1 >= FLAGS.line_x and x1 <= video_width - FLAGS.line_x:
-        #         if (speed[i] is None or speed[i] == 0):
-        #             # speed[i] = measure.calculate_speed([x1,y1,w1,h1], [x2,y2,w2,h2], fps)
-        #             speed[i] = measure.calculate_speed_3([x1,y1,w1,h1], [x2,y2,w2,h2], _time, obj_height)
-        #             # speed[i] = measure.calculate_speed_2([x1,y1,w1,h1], [x2,y2,w2,h2], _time, obj_width, obj_height)
-
-        #         if speed[i] is not None:
-        #             # draw bbox on screen
-        #             color = colors[i % len(colors)]
-        #             color = [j * 255 for j in color]
-        #             cv2.putText(frame,"v" + str(i) + "-" + str(speed[i]) + "km/h",(int(x2-w2/2), int(y2-h2/2)-10),0, 0.75, (255,255,255),2)
-        #             print(speed[i])
-
         # cv2.line(frame, (FLAGS.line_x, FLAGS.line_y), (FLAGS.line_x, int(video_height)), (0,0,255), 2)
         # cv2.line(frame, (int(video_width)-FLAGS.line_x, FLAGS.line_y), (int(video_width)-FLAGS.line_x, int(video_height)), (0,0,255), 2)
         result = np.asarray(frame)
@@ -303,11 +259,9 @@ def main(_argv):
         if FLAGS.output:
             out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
-    if FLAGS.csv:
-        # _storage = FLAGS.csv
-        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Timestamp", "Position"])
-        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds"])
-        df.to_csv(r'test.csv', index = False, header = True)
+
+    df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Position", "Timestamp"])
+    df.to_csv(r'test.csv', index = False, header = True)
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
