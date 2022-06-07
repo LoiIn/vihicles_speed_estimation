@@ -42,6 +42,7 @@ flags.DEFINE_float('distance', None, 'reality of distance')
 flags.DEFINE_integer('A_point', 10, 'define x position of cross line')
 flags.DEFINE_float('start_time', 0, 'time start at real world')
 flags.DEFINE_string('csv', None, 'Path to save csv file')
+flags.DEFINE_integer('points', 4, 'Number of truth point')
 
 from speed_measure.speedAbleObject import SpeedAbleObject
 import pandas as pd
@@ -81,13 +82,21 @@ def main(_argv):
     _width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     _height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
     _estimated_distance = _width - FLAGS.A_point * 2
-    _flags = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0}
-    _flags['A'] = FLAGS.A_point
-    _flags['B'] = FLAGS.A_point + _estimated_distance / 5
-    _flags['C'] = FLAGS.A_point + 2* _estimated_distance / 5
-    _flags['D'] = FLAGS.A_point + 3* _estimated_distance / 5
-    _flags['E'] = FLAGS.A_point + 4* _estimated_distance / 5
-    _flags['F'] = _width - FLAGS.A_point
+    _number_distances = FLAGS.points - 1
+    # _flags = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0}
+    _flags = {}
+    for x in range(1, FLAGS.points + 1):
+        _flags[str(x)] = FLAGS.A_point + x*_estimated_distance / _number_distances
+
+    print(_flags)
+    # _flags['A'] = FLAGS.A_point
+    # _flags['B'] = FLAGS.A_point + _estimated_distance / 7
+    # _flags['C'] = FLAGS.A_point + 2 * _estimated_distance / 7
+    # _flags['D'] = FLAGS.A_point + 3 * _estimated_distance / 7
+    # _flags['E'] = FLAGS.A_point + 4 * _estimated_distance / 7
+    # _flags['F'] = FLAGS.A_point + 5 * _estimated_distance / 7
+    # _flags['G'] = FLAGS.A_point + 6 * _estimated_distance / 7
+    # _flags['H'] = _width - FLAGS.A_point
 
     # get video ready to save locally if flag is set
     if FLAGS.output:
@@ -221,7 +230,11 @@ def main(_argv):
             
             centroid = format_center_point(bbox)
             if _i not in objSpeed:            
-                objSpeed[_i] = SpeedAbleObject(_i, centroid, color, _flags)
+                objSpeed[_i] = SpeedAbleObject(_i, centroid, color, _flags, FLAGS.points)
+                print(objSpeed[_i].points)
+                print(objSpeed[_i].timestamp)
+                print(objSpeed[_i].position)
+                print(objSpeed[_i].speeds)
             else:
                 objSpeed[_i].update(bbox, frame_idx)
             
@@ -230,24 +243,29 @@ def main(_argv):
             else:
                 measure.calculate_speed( objSpeed[_i], _fps, None, FLAGS.start_time)
             
-            if objSpeed[_i].speeds["EF"] is not None:
-                cv2.putText(frame,str(objSpeed[_i].speeds["EF"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
-            elif objSpeed[_i].speeds["DE"] is not None:
-                cv2.putText(frame,str(objSpeed[_i].speeds["DE"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
-            elif objSpeed[_i].speeds["CD"] is not None:
-                cv2.putText(frame,str(objSpeed[_i].speeds["CD"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
-            elif objSpeed[_i].speeds["BC"] is not None:
-                cv2.putText(frame,str(objSpeed[_i].speeds["BC"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
-            elif objSpeed[_i].speeds["AB"] is not None:
-                cv2.putText(frame,str(objSpeed[_i].speeds["AB"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
+            # if objSpeed[_i].speeds["GH"] is not None:
+            #     cv2.putText(frame,str(objSpeed[_i].speeds["GH"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
+            # elif objSpeed[_i].speeds["FG"] is not None:
+            #     cv2.putText(frame,str(objSpeed[_i].speeds["FG"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
+            # elif objSpeed[_i].speeds["EF"] is not None:
+            #     cv2.putText(frame,str(objSpeed[_i].speeds["EF"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
+            # elif objSpeed[_i].speeds["DE"] is not None:
+            #     cv2.putText(frame,str(objSpeed[_i].speeds["DE"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
+            # elif objSpeed[_i].speeds["CD"] is not None:
+            #     cv2.putText(frame,str(objSpeed[_i].speeds["CD"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
+            # elif objSpeed[_i].speeds["BC"] is not None:
+            #     cv2.putText(frame,str(objSpeed[_i].speeds["BC"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
+            # elif objSpeed[_i].speeds["AB"] is not None:
+            #     cv2.putText(frame,str(objSpeed[_i].speeds["AB"]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
             
-            if objSpeed[_i].speed is not None: 
-                csv_data['ID'].append(_i)
-                csv_data['ClassName'].append(track.get_class())
-                csv_data["Speed"].append(objSpeed[_i].speed)
-                csv_data["Speeds"].append(objSpeed[_i].speeds)
-                csv_data["Position"].append(objSpeed[_i].position)
-                csv_data["Timestamp"].append(objSpeed[_i].timestamp)
+            # if objSpeed[_i].speed is not None and not objSpeed[_i].logged: 
+            csv_data['ID'].append(_i)
+            csv_data['ClassName'].append(track.get_class())
+            csv_data["Speed"].append(objSpeed[_i].speed)
+            csv_data["Speeds"].append(objSpeed[_i].speeds)
+            csv_data["Position"].append(objSpeed[_i].position)
+            csv_data["Timestamp"].append(objSpeed[_i].timestamp)
+            objSpeed[_i].logged = True
             
         for f in _flags:
             cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)

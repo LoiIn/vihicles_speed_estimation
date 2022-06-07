@@ -22,6 +22,6 @@ def calculate_speed(_obj, fps, asRt, start_time):
             _obj.speeds[i+j] = "t:" + str(round(_moment,2)) + "-v:" + str(round(speed * 3.6 / _asRt, 2))
             estimatedSpeeds.append(speed * 3.6 / _asRt)
 
-    if len(estimatedSpeeds) == 5:
+    if len(estimatedSpeeds) == _obj.truthPoints:
         _obj.calculate_average_speed(estimatedSpeeds)
         _obj.estimated = True
