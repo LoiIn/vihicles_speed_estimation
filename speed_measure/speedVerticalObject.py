@@ -1,6 +1,6 @@
 import numpy as np
 
-class SpeedVeticalObject:
+class SpeedVerticalObject:
     def __init__(self, objectID, centroid, color, flags, _points):
         self.objectID = objectID
         self.centroids = [centroid[:2]]
