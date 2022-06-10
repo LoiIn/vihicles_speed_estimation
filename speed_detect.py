@@ -43,8 +43,10 @@ flags.DEFINE_integer('A_point', 10, 'define x position of cross line')
 flags.DEFINE_float('start_time', 0, 'time start at real world')
 flags.DEFINE_string('csv', None, 'Path to save csv file')
 flags.DEFINE_integer('points', 4, 'Number of truth point')
+flags.DEFINE_integer('video_type', 0, 'O: vertical, 1: horizontical')
 
-from speed_measure.speedAbleObject import SpeedAbleObject
+from speed_measure.speedVerticalObject import SpeedVerticalObject as vertObjSpeed
+from speed_measure.speedHorizontialObject import SpeedHorizontialObject as horzObjSpeed
 import pandas as pd
 
 def main(_argv):
@@ -81,7 +83,7 @@ def main(_argv):
     _fps = int(vid.get(cv2.CAP_PROP_FPS))
     _width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     _height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    _estimated_distance = _width - FLAGS.A_point * 2
+    _estimated_distance = (_width if FLAGS.video_type == 0 else _height) - FLAGS.A_point * 2
     _number_distances = FLAGS.points - 1
     _flags = {}
     for x in range(1, FLAGS.points + 1):
@@ -219,7 +221,10 @@ def main(_argv):
             
             centroid = format_center_point(bbox)
             if _i not in objSpeed:            
-                objSpeed[_i] = SpeedAbleObject(_i, centroid, color, _flags, FLAGS.points)
+                if FLAGS.video_type == 0:
+                    objSpeed[_i] = vertObjSpeed(_i, centroid, color, _flags, FLAGS.points)
+                elif FLAGS.video_type == 1:
+                    objSpeed[_i] = horzObjSpeed(_i, centroid, color, _flags, FLAGS.points)                    
             else:
                 objSpeed[_i].update(centroid, frame_idx)
             

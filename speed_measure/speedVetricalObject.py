@@ -1,6 +1,6 @@
 import numpy as np
 
-class SpeedAbleObject:
+class SpeedVeticalObject:
     def __init__(self, objectID, centroid, color, flags, _points):
         self.objectID = objectID
         self.centroids = [centroid[:2]]
@@ -70,7 +70,7 @@ class SpeedAbleObject:
                             if centroid[0] < (self.flags[_pl_val] + self.flags[str(1)]):
                                 self.position[_pl_val] = centroid[:2]
                             else:
-                                self.position[_pl_val] = [self.flags[_pl_val] + 3*self.flags[str(1)], centroid[1]]
+                                self.position[_pl_val] = [self.flags[_pl_val] + 2*self.flags[str(1)], centroid[1]]
                         else:
                             self.position[_pl_val] = centroid[:2]
                         self.timestamp[_pl_val] = frame_num
@@ -95,7 +95,7 @@ class SpeedAbleObject:
                             if centroid[0] > 0:
                                 self.position[_pl_val] = centroid[:2]
                             else:
-                                self.position[_pl_val] = [0-3*self.flags[str(1)],centroid[1]]
+                                self.position[_pl_val] = [0-2*self.flags[str(1)],centroid[1]]
                         else:
                             self.position[_pl_val] = centroid[:2]
                         self.timestamp[_pl_val] = frame_num
