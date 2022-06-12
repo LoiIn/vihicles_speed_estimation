@@ -47,6 +47,7 @@ def main(_argv):
         _frame = cv2.cvtColor(_frame, cv2.COLOR_BGR2RGB)
 
         rs = np.asarray(_frame)
+        rs = cv2.cvtColor(_frame, cv2.COLOR_RGB2BGR)
         out.write(rs)
 
         if cv2.waitKey(1) & 0xFF == ord('q'): break

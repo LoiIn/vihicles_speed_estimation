@@ -13,13 +13,13 @@ def calculate_speed(_obj, fps, asRt, start_time):
             d = per_distance(_obj.position[i], _obj.position[j])
             frames = abs(_obj.timestamp[i] - _obj.timestamp[j])
             t = frames/fps
-            _moment = start_time + _obj.timestamp[i] / fps
-            if d == 0 or t == 0:
+            # _moment = start_time + _obj.timestamp[i] / fpsP
+            if d == 0 or t == 0:  
                 continue
             
             speed = d / t 
             _asRt = asRt if asRt is not None else _obj.scale 
-            _obj.speeds[i+j] = "t:" + str(round(_moment,2)) + "-v:" + str(round(speed * 3.6 / _asRt, 2))
+            _obj.speeds[i+j] = round(speed * 3.6 / _asRt, 2)
             estimatedSpeeds.append(speed * 3.6 / _asRt)
 
     if len(estimatedSpeeds) == _obj.truthPoints - 1:

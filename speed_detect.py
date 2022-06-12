@@ -217,7 +217,7 @@ def main(_argv):
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
-            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
+            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 0.9, (255,0,0),2)
             
             centroid = format_center_point(bbox)
             if _i not in objSpeed:            
@@ -235,8 +235,8 @@ def main(_argv):
 
             for x in range(1, FLAGS.points):
                 str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )
-                if objSpeed[_i].speeds[str_x] is not None:
-                    cv2.putText(frame,str(objSpeed[_i].speeds[str_x]),(int(bbox[0]) + 50, int(bbox[1]) - 10),0, 0.9, (255,255,255),2)
+                if objSpeed[_i].speeds[str_x] is not None and objSpeed[_i].speeds[str_x] > 3.0:
+                    cv2.putText(frame,str(objSpeed[_i].speeds[str_x]),(int(bbox[0]) + 65, int(bbox[1]) - 10),0, 0.9, (255,0,0),2)
                     break
             
             if objSpeed[_i].speed is not None and not objSpeed[_i].logged: 
@@ -249,7 +249,10 @@ def main(_argv):
                 objSpeed[_i].logged = True
             
         for f in _flags:
-            cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
+            if FLAGS.video_type == 0:
+                cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
+            else:
+                cv2.line(frame, (0, int(_flags[f])), (_width, int(_flags[f])), (0,0,255), 2)
 
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
