@@ -89,6 +89,7 @@ def main(_argv):
     for x in range(1, FLAGS.points + 1):
         _flags[str(x)] = FLAGS.A_point + (x-1)*_estimated_distance / _number_distances
 
+    print(_flags)
     # get video ready to save locally if flag is set
     if FLAGS.output:
         # by default VideoCapture returns float instead of int

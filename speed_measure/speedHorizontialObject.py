@@ -44,6 +44,8 @@ class SpeedHorizontialObject:
         return poses
 
     def update(self, centroid, frame_num):
+        centroid[0] = round(centroid[0],2)
+        centroid[1] = round(centroid[1],2)
         self.bbox = centroid
         self.scale = centroid[2] / 1.908
         if not self.estimated:
@@ -52,9 +54,9 @@ class SpeedHorizontialObject:
             if self.direction is None:
                 self.direction = 0
             if self.direction == 0 and (len(self.centroids) > 2):
-                horizontial = [c[1] for c in self.centroids]
-                self.direction = centroid[1] - np.mean(horizontial)
-            
+                vertical = [c[1] for c in self.centroids]
+                self.direction = centroid[1] - np.mean(vertical)
+
             if self.direction > 0:
                 _pl = None
                 _pl_val = None
@@ -70,11 +72,10 @@ class SpeedHorizontialObject:
                             if centroid[1] < (self.flags[_pl_val] + self.flags[str(1)]):
                                 self.position[_pl_val] = centroid[:2]
                             else:
-                                self.position[_pl_val] = [self.flags[_pl_val] + 2*self.flags[str(1)], centroid[1]]
-                        else:
-                            self.position[_pl_val] = centroid[:2]
-                        self.timestamp[_pl_val] = frame_num
-                        self.lastPoint = True
+                                self.position[_pl_val] = [self.flags[_pl_val] + self.flags[str(1)], centroid[1]]
+                            
+                            self.timestamp[_pl_val] = frame_num
+                            self.lastPoint = True
                     else:
                         if centroid[1] > self.flags[_pl_val]:
                             self.timestamp[_pl_val] = frame_num
@@ -87,7 +88,7 @@ class SpeedHorizontialObject:
                     if self.timestamp[str(x)] == 0:
                         _pl = x
                         break
-                                
+            
                 if _pl is not None: 
                     _pl_val = str(_pl)
                     if _pl % self.truthPoints == 0:
@@ -95,16 +96,14 @@ class SpeedHorizontialObject:
                             if centroid[1] > 0:
                                 self.position[_pl_val] = centroid[:2]
                             else:
-                                self.position[_pl_val] = [0-2*self.flags[str(1)],centroid[1]]
-                        else:
-                            self.position[_pl_val] = centroid[:2]
-                        self.timestamp[_pl_val] = frame_num
-                        self.lastPoint = True
+                                self.position[_pl_val] = [0-self.flags[str(1)],centroid[1]]
+                            self.timestamp[_pl_val] = frame_num
+                            self.lastPoint = True
                     else:
                         if centroid[1] < self.flags[str(self.truthPoints + 1 - _pl)]:
                             self.timestamp[_pl_val] = frame_num
                             self.position[_pl_val] = centroid[:2]
-                   
+        
         
     def calculate_average_speed(self, estimatedSpeeds):
         avera_speed = np.average(estimatedSpeeds)
