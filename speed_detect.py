@@ -80,9 +80,15 @@ def main(_argv):
         vid = cv2.VideoCapture(video_path)
 
     out = None
+    text_size = 1
     _fps = int(vid.get(cv2.CAP_PROP_FPS))
     _width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     _height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    if _width > 1600:
+        text_size *= 2
+    elif _width > 1200 and _width <= 1600:
+        text_size *= 1.5
+
     _estimated_distance = (_width if FLAGS.video_type == 0 else _height) - FLAGS.A_point * 2
     _number_distances = FLAGS.points - 1
     _flags = {}
@@ -105,8 +111,8 @@ def main(_argv):
         "ClassName" : [],
         "Speed" : [],
         "Speeds": [],
-        "Position": [],
-        "Timestamp": []
+        # "Position": [],
+        # "Timestamp": []
     }
     frame_idx = 0
 
@@ -218,7 +224,7 @@ def main(_argv):
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
-            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 0.9, (255,0,0),2)
+            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, text_size, (255,0,0),2*text_size)
             
             centroid = format_center_point(bbox)
             if _i not in objSpeed:            
@@ -245,8 +251,8 @@ def main(_argv):
                 csv_data['ClassName'].append(track.get_class())
                 csv_data["Speed"].append(objSpeed[_i].speed)
                 csv_data["Speeds"].append(objSpeed[_i].speeds)
-                csv_data["Position"].append(objSpeed[_i].position)
-                csv_data["Timestamp"].append(objSpeed[_i].timestamp)
+                # csv_data["Position"].append(objSpeed[_i].position)
+                # csv_data["Timestamp"].append(objSpeed[_i].timestamp)
                 objSpeed[_i].logged = True
             
         for f in _flags:
@@ -268,7 +274,8 @@ def main(_argv):
 
     if FLAGS.csv:
         path_csv = FLAGS.csv
-        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Position", "Timestamp"])
+        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Position", "Timestamp"])
+        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds"])
         df.to_csv(path_csv, index = False, header = True)
     cv2.destroyAllWindows()
 

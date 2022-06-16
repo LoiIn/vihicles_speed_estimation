@@ -18,6 +18,7 @@ class SpeedVerticalObject:
         self.speed = None
         self.logged = False    
         self.truthPoints = _points
+        self.speedCustom = 0
 
     def initPoints(self, _points):
         points = []
@@ -103,8 +104,30 @@ class SpeedVerticalObject:
                         if centroid[0] < self.flags[str(self.truthPoints + 1 - _pl)]:
                             self.timestamp[_pl_val] = frame_num
                             self.position[_pl_val] = centroid[:2]
+    
+    def custom_speed(self):
+        delta = self.speeds['23'] - self.speeds['12']
+        custom = 0
+        estimatedSpeeds = []
+        if delta > 0:
+            custom = -7
+        elif delta < 0: 
+            custom = 5
         
-    def calculate_average_speed(self, estimatedSpeeds):
-        avera_speed = np.average(estimatedSpeeds)
+        self.speedCustom = custom
+        
+        for (i, j) in self.points:
+            if int(j) != self.truthPoints:
+                self.speeds[i+j] += custom
+            estimatedSpeeds.append(self.speeds[i+j])
+        
+        return estimatedSpeeds
+
+
+    def calculate_average_speed(self):
+        _estimate = self.custom_speed()
+        
+        avera_speed = np.average(_estimate)
         
         self.speed = round(avera_speed, 1)
+        self.estimated = True

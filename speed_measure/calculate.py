@@ -5,7 +5,8 @@ def per_distance(prevPos, curPos):
     return d
 
 def calculate_speed(_obj, fps, asRt, start_time):
-    estimatedSpeeds = []
+    # estimatedSpeeds = []
+    lenCheck = 0
     if not _obj.estimated:
         for (i, j) in _obj.points:
             if (_obj.position[i] is None or _obj.position[j] is None):
@@ -20,8 +21,8 @@ def calculate_speed(_obj, fps, asRt, start_time):
             speed = d / t 
             _asRt = asRt if asRt is not None else _obj.scale 
             _obj.speeds[i+j] = round(speed * 3.6 / _asRt, 2)
-            estimatedSpeeds.append(round(speed * 3.6 / _asRt, 2))
+            # estimatedSpeeds.append(round(speed * 3.6 / _asRt, 2))
+            lenCheck += 1
 
-    if len(estimatedSpeeds) == _obj.truthPoints - 1:
-        _obj.calculate_average_speed(estimatedSpeeds)
-        _obj.estimated = True
+    if lenCheck == _obj.truthPoints - 1:
+        _obj.calculate_average_speed()
