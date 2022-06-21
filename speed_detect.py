@@ -27,19 +27,15 @@ from deep_sort import preprocessing, nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
-flags.DEFINE_string('framework', 'tf', '(tf, tflite, trt')
+# flags.DEFINE_string('framework', 'tf', '(tf, tflite, trt')
 flags.DEFINE_string('weights', './checkpoints/yolov4-416', 'path to weights file')
 flags.DEFINE_integer('size', 416, 'resize images to')
 flags.DEFINE_string('video', './data/video/test.mp4', 'path to input video or set to 0 for webcam')
 flags.DEFINE_string('output', None, 'path to output video')
-flags.DEFINE_string('output_format', 'XVID', 'codec used in VideoWriter when saving video to file')
 flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
-flags.DEFINE_boolean('dont_show', False, 'dont show video output')
-flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
-flags.DEFINE_boolean('count', False, 'count objects being tracked on screen')
 flags.DEFINE_float('distance', None, 'reality of distance')
-flags.DEFINE_integer('A_point', 10, 'define x position of cross line')
+flags.DEFINE_integer('A_point', 40, 'define x position of cross line')
 flags.DEFINE_float('start_time', 0, 'time start at real world')
 flags.DEFINE_string('csv', None, 'Path to save csv file')
 flags.DEFINE_integer('points', 4, 'Number of truth point')
@@ -50,7 +46,7 @@ from speed_measure.speedHorizontialObject import SpeedHorizontialObject as horzO
 import pandas as pd
 
 def main(_argv):
-    # Definition of the parameters
+    # Definition of the parameters for object tracking
     max_cosine_distance = 0.4
     nn_budget = None
     nms_max_overlap = 1.0
@@ -79,32 +75,33 @@ def main(_argv):
     except:
         vid = cv2.VideoCapture(video_path)
 
-    out = None
-    text_size = 1
+    # get video's attributes
     _fps = int(vid.get(cv2.CAP_PROP_FPS))
     _width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     _height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    # get video ready to save locally if flag is set
+    out = None
+    if FLAGS.output:
+        width = _width
+        height = _height
+        fps = _fps
+        codec = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
+
+    # calculate size of text when put to output frame
+    text_size = 1
     if _width > 1600:
         text_size *= 2
     elif _width > 1200 and _width <= 1600:
         text_size *= 1.5
-
+   
+   # Definition of speed estimation
     _estimated_distance = (_width if FLAGS.video_type == 0 else _height) - FLAGS.A_point * 2
     _number_distances = FLAGS.points - 1
     _flags = {}
     for x in range(1, FLAGS.points + 1):
         _flags[str(x)] = FLAGS.A_point + (x-1)*_estimated_distance / _number_distances
-
-    print(_flags)
-    # get video ready to save locally if flag is set
-    if FLAGS.output:
-        # by default VideoCapture returns float instead of int
-        width = _width
-        height = _height
-        fps = _fps
-        codec = cv2.VideoWriter_fourcc(*FLAGS.output_format)
-        out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
-
     objSpeed = {}
     csv_data = {
         "ID" : [],
@@ -114,24 +111,18 @@ def main(_argv):
         # "Position": [],
         # "Timestamp": []
     }
+
+    # others definition
     frame_idx = 0
-
-    # read in all class names from config
     class_names = utils.read_class_names(cfg.YOLO.CLASSES)
-
-    # by default allow all classes in .names file
     # allowed_classes = list(class_names.values())
-    
-    # custom allowed classes (uncomment line below to customize tracker for only people)
     allowed_classes = ['motorbike', 'car']
 
     # while video is running
     while True:
-        # start_time = time.time()
         return_value, frame = vid.read()
         if return_value:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            # image = Image.fromarray(frame)
         else:
             print('Video has ended or failed, try a different video format!')
             break
@@ -186,9 +177,6 @@ def main(_argv):
                 names.append(class_name)
         names = np.array(names)
         count = len(names)
-        if FLAGS.count:
-            cv2.putText(frame, "Objects being tracked: {}".format(count), (5, 35), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 255, 0), 2)
-            print("Objects being tracked: {}".format(count))
         
         # delete detections that are not in allowed_classes
         bboxes = np.delete(bboxes, deleted_indx, axis=0)
@@ -263,9 +251,6 @@ def main(_argv):
 
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        
-        if not FLAGS.dont_show:
-            cv2.imshow("Output Video", result)
         
         # if output flag is set, save video file
         if FLAGS.output:
