@@ -1,9 +1,9 @@
 import numpy as np
 
 class SpeedVerticalObject:
-    def __init__(self, objectID, centroid, color, flags, _points):
+    def __init__(self, objectID, centroid, color, flags, _points, custom1, custom2):
         self.objectID = objectID
-        self.centroids = [centroid[:2]]
+        self.centroids = [(round(centroid[0], 2), round(centroid[1], 2))]
         self.bbox = centroid
         self.scale = centroid[2] / 1.908
         self.color = color
@@ -18,7 +18,8 @@ class SpeedVerticalObject:
         self.speed = None
         self.logged = False    
         self.truthPoints = _points
-        self.speedCustom = 0
+        self.posCustom = custom1
+        self.neCustom = custom2
 
     def initPoints(self, _points):
         points = []
@@ -54,7 +55,7 @@ class SpeedVerticalObject:
         
             if self.direction is None:
                 self.direction = 0
-            if self.direction == 0 and (len(self.centroids) > 2):
+            if self.direction == 0 and (len(self.centroids) > 1):
                 vertical = [c[0] for c in self.centroids]
                 self.direction = centroid[0] - np.mean(vertical)
 
@@ -62,6 +63,8 @@ class SpeedVerticalObject:
                 _pl = None
                 _pl_val = None
                 for x in range(1, self.truthPoints + 1):
+                    # if x == 1 or x == self.truthPoints:
+                    #     continue
                     if self.timestamp[str(x)] == 0:
                         _pl = x
                         break
@@ -86,6 +89,8 @@ class SpeedVerticalObject:
                 _pl = None
                 _pl_val = None
                 for x in range(1, self.truthPoints + 1):
+                    # if x == 1 or x == self.truthPoints:
+                    #     continue
                     if self.timestamp[str(x)] == 0:
                         _pl = x
                         break
@@ -106,20 +111,13 @@ class SpeedVerticalObject:
                             self.position[_pl_val] = centroid[:2]
     
     def custom_speed(self):
-        delta = self.speeds['23'] - self.speeds['12']
-        custom = 0
         estimatedSpeeds = []
-        if delta > 0:
-            custom = -7
-        elif delta < 0: 
-            custom = 5
-        
-        self.speedCustom = custom
-        
+        custom = self.posCustom if self.direction > 0 else self.neCustom
         for (i, j) in self.points:
-            if int(j) != self.truthPoints:
-                self.speeds[i+j] += custom
-            estimatedSpeeds.append(self.speeds[i+j])
+            if int(i) != self.truthPoints:
+                if self.speeds[i+j] is not None:
+                    self.speeds[i+j] += custom
+                    estimatedSpeeds.append(self.speeds[i+j])
         
         return estimatedSpeeds
 

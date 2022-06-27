@@ -40,6 +40,8 @@ flags.DEFINE_float('start_time', 0, 'time start at real world')
 flags.DEFINE_string('csv', None, 'Path to save csv file')
 flags.DEFINE_integer('points', 4, 'Number of truth point')
 flags.DEFINE_integer('video_type', 0, 'O: vertical, 1: horizontical')
+flags.DEFINE_float('custom1', 0, 'custom parametter for positive direction')
+flags.DEFINE_float('custom2', 0, 'custom parametter for negative direction')
 
 from speed_measure.speedVerticalObject import SpeedVerticalObject as vertObjSpeed
 from speed_measure.speedHorizontialObject import SpeedHorizontialObject as horzObjSpeed
@@ -102,21 +104,23 @@ def main(_argv):
     _flags = {}
     for x in range(1, FLAGS.points + 1):
         _flags[str(x)] = FLAGS.A_point + (x-1)*_estimated_distance / _number_distances
+    print(_flags)
+
     objSpeed = {}
     csv_data = {
         "ID" : [],
         "ClassName" : [],
         "Speed" : [],
         "Speeds": [],
-        # "Position": [],
-        # "Timestamp": []
+        "Position": [],
+        "Timestamp": []
     }
 
     # others definition
     frame_idx = 0
     class_names = utils.read_class_names(cfg.YOLO.CLASSES)
     # allowed_classes = list(class_names.values())
-    allowed_classes = ['motorbike', 'car']
+    allowed_classes = ['motorbike', 'car', 'bicycle', 'truck']
 
     # while video is running
     while True:
@@ -212,12 +216,13 @@ def main(_argv):
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
-            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, text_size, (255,0,0),2*text_size)
+            # cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),2)
             
             centroid = format_center_point(bbox)
+            cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 2, (255, 0, 0), 1)
             if _i not in objSpeed:            
                 if FLAGS.video_type == 0:
-                    objSpeed[_i] = vertObjSpeed(_i, centroid, color, _flags, FLAGS.points)
+                    objSpeed[_i] = vertObjSpeed(_i, centroid, color, _flags, FLAGS.points, FLAGS.custom1, FLAGS.custom2)
                 elif FLAGS.video_type == 1:
                     objSpeed[_i] = horzObjSpeed(_i, centroid, color, _flags, FLAGS.points)                    
             else:
@@ -231,23 +236,25 @@ def main(_argv):
             for x in range(1, FLAGS.points):
                 str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )
                 if objSpeed[_i].speeds[str_x] is not None and objSpeed[_i].speeds[str_x] > 3.0:
-                    cv2.putText(frame,str(objSpeed[_i].speeds[str_x]),(int(bbox[0]) + 65, int(bbox[1]) - 10),0, 0.9, (255,0,0),2)
+                    cv2.putText(frame,str(objSpeed[_i].speeds[str_x]),(int(bbox[0]) + 150, int(bbox[1]) - 10),0, text_size, (255,0,0),2*text_size)
                     break
             
-            if objSpeed[_i].speed is not None and not objSpeed[_i].logged: 
-                csv_data['ID'].append(_i)
-                csv_data['ClassName'].append(track.get_class())
-                csv_data["Speed"].append(objSpeed[_i].speed)
-                csv_data["Speeds"].append(objSpeed[_i].speeds)
-                # csv_data["Position"].append(objSpeed[_i].position)
-                # csv_data["Timestamp"].append(objSpeed[_i].timestamp)
-                objSpeed[_i].logged = True
+            # if objSpeed[_i].speed is not None and not objSpeed[_i].logged: 
+            csv_data['ID'].append(_i)
+            csv_data['ClassName'].append(track.get_class())
+            csv_data["Speed"].append(objSpeed[_i].speed)
+            csv_data["Speeds"].append(objSpeed[_i].speeds)
+            csv_data["Position"].append(objSpeed[_i].position)
+            csv_data["Timestamp"].append(objSpeed[_i].timestamp)
+            objSpeed[_i].logged = True
             
         for f in _flags:
             if FLAGS.video_type == 0:
-                cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
+                if int(f) != 1 and int(f) != FLAGS.points:
+                    cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
             else:
-                cv2.line(frame, (0, int(_flags[f])), (_width, int(_flags[f])), (0,0,255), 2)
+                if int(f) != 1 and int(f) != FLAGS.points:
+                    cv2.line(frame, (0, int(_flags[f])), (_width, int(_flags[f])), (0,0,255), 2)
 
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -259,8 +266,8 @@ def main(_argv):
 
     if FLAGS.csv:
         path_csv = FLAGS.csv
-        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Position", "Timestamp"])
-        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds"])
+        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Position", "Timestamp"])
+        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds"])
         df.to_csv(path_csv, index = False, header = True)
     cv2.destroyAllWindows()
 
