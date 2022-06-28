@@ -10,9 +10,9 @@ class SpeedHorizontialObject:
         self.direction = None
         self.flags = flags
         self.points = self.initPoints(_points)
-        self.timestamp = self.initTimestamp(_points + 1)
+        self.timestamps = self.initTimestamp(_points + 1)
         self.speeds = self.initSpeeds(_points)
-        self.position = self.initPosition(_points + 1)
+        self.positions = self.initPosition(_points + 1)
         self.lastPoint = False
         self.estimated = False
         self.speed = None
@@ -61,7 +61,7 @@ class SpeedHorizontialObject:
                 _pl = None
                 _pl_val = None
                 for x in range(1, self.truthPoints + 1):
-                    if self.timestamp[str(x)] == 0:
+                    if self.timestamps[str(x)] == 0:
                         _pl = x
                         break
                 
@@ -70,22 +70,22 @@ class SpeedHorizontialObject:
                     if _pl % self.truthPoints == 0:
                         if centroid[1] > self.flags[_pl_val]:
                             if centroid[1] < (self.flags[_pl_val] + self.flags[str(1)]):
-                                self.position[_pl_val] = centroid[:2]
+                                self.positions[_pl_val] = centroid[:2]
                             else:
-                                self.position[_pl_val] = [self.flags[_pl_val] + self.flags[str(1)], centroid[1]]
+                                self.positions[_pl_val] = [self.flags[_pl_val] + self.flags[str(1)], centroid[1]]
                             
-                            self.timestamp[_pl_val] = frame_num
+                            self.timestamps[_pl_val] = frame_num
                             self.lastPoint = True
                     else:
                         if centroid[1] > self.flags[_pl_val]:
-                            self.timestamp[_pl_val] = frame_num
-                            self.position[_pl_val] = centroid[:2]
+                            self.timestamps[_pl_val] = frame_num
+                            self.positions[_pl_val] = centroid[:2]
 
             elif self.direction < 0:
                 _pl = None
                 _pl_val = None
                 for x in range(1, self.truthPoints + 1):
-                    if self.timestamp[str(x)] == 0:
+                    if self.timestamps[str(x)] == 0:
                         _pl = x
                         break
             
@@ -94,15 +94,15 @@ class SpeedHorizontialObject:
                     if _pl % self.truthPoints == 0:
                         if centroid[1] < self.flags[str(1)]:
                             if centroid[1] > 0:
-                                self.position[_pl_val] = centroid[:2]
+                                self.positions[_pl_val] = centroid[:2]
                             else:
-                                self.position[_pl_val] = [0-self.flags[str(1)],centroid[1]]
-                            self.timestamp[_pl_val] = frame_num
+                                self.positions[_pl_val] = [0-self.flags[str(1)],centroid[1]]
+                            self.timestamps[_pl_val] = frame_num
                             self.lastPoint = True
                     else:
                         if centroid[1] < self.flags[str(self.truthPoints + 1 - _pl)]:
-                            self.timestamp[_pl_val] = frame_num
-                            self.position[_pl_val] = centroid[:2]
+                            self.timestamps[_pl_val] = frame_num
+                            self.positions[_pl_val] = centroid[:2]
         
         
     def calculate_average_speed(self, estimatedSpeeds):

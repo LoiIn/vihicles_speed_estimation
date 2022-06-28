@@ -36,7 +36,6 @@ flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_float('distance', None, 'reality of distance')
 flags.DEFINE_integer('A_point', 40, 'define x position of cross line')
-flags.DEFINE_float('start_time', 0, 'time start at real world')
 flags.DEFINE_string('csv', None, 'Path to save csv file')
 flags.DEFINE_integer('points', 4, 'Number of truth point')
 flags.DEFINE_integer('video_type', 0, 'O: vertical, 1: horizontical')
@@ -112,8 +111,9 @@ def main(_argv):
         "ClassName" : [],
         "Speed" : [],
         "Speeds": [],
-        "Position": [],
-        "Timestamp": []
+        # "Positions": [],
+        # "Timestamps": []
+        "Times": []
     }
 
     # others definition
@@ -216,7 +216,7 @@ def main(_argv):
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
-            # cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),2)
+            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),2)
             
             centroid = format_center_point(bbox)
             cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
@@ -229,9 +229,9 @@ def main(_argv):
                 objSpeed[_i].update(centroid, frame_idx)
             
             if FLAGS.distance is not None:
-                measure.calculate_speed( objSpeed[_i], _fps, _width/FLAGS.distance, FLAGS.start_time)
+                measure.calculate_speed( objSpeed[_i], _fps, _width/FLAGS.distance)
             else:
-                measure.calculate_speed( objSpeed[_i], _fps, None, FLAGS.start_time)
+                measure.calculate_speed( objSpeed[_i], _fps, None)
 
             for x in range(1, FLAGS.points):
                 str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )
@@ -244,8 +244,9 @@ def main(_argv):
                 csv_data['ClassName'].append(track.get_class())
                 csv_data["Speed"].append(objSpeed[_i].speed)
                 csv_data["Speeds"].append(objSpeed[_i].speeds)
-                csv_data["Position"].append(objSpeed[_i].position)
-                csv_data["Timestamp"].append(objSpeed[_i].timestamp)
+                # csv_data["Positions"].append(objSpeed[_i].positions)
+                # csv_data["Timestamps"].append(objSpeed[_i].timestamps)
+                csv_data["Times"].append(objSpeed[_i].realtimes)
                 objSpeed[_i].logged = True
             
         for f in _flags:
@@ -266,8 +267,8 @@ def main(_argv):
 
     if FLAGS.csv:
         path_csv = FLAGS.csv
-        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Position", "Timestamp"])
-        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds"])
+        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Position", "Timestamp"])
+        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Times"])
         df.to_csv(path_csv, index = False, header = True)
     cv2.destroyAllWindows()
 

@@ -1,4 +1,5 @@
 import numpy as np
+from speed_measure.utils import convertSecondToMinute
 
 class SpeedVerticalObject:
     def __init__(self, objectID, centroid, color, flags, _points, custom1, custom2):
@@ -10,9 +11,9 @@ class SpeedVerticalObject:
         self.direction = None
         self.flags = flags
         self.points = self.initPoints(_points)
-        self.timestamp = self.initTimestamp(_points + 1)
+        self.timestamps = self.initTimestamp(_points + 1)
         self.speeds = self.initSpeeds(_points)
-        self.position = self.initPosition(_points + 1)
+        self.positions = self.initPosition(_points + 1)
         self.lastPoint = False
         self.estimated = False
         self.speed = None
@@ -20,6 +21,7 @@ class SpeedVerticalObject:
         self.truthPoints = _points
         self.posCustom = custom1
         self.neCustom = custom2
+        self.realtimes = self.initRealtimes(_points + 1)
 
     def initPoints(self, _points):
         points = []
@@ -45,6 +47,12 @@ class SpeedVerticalObject:
             poses[str(x)] = None
         return poses
 
+    def initRealtimes(self, _points):
+        rts = {}
+        for x in range(1, _points):
+            rts[str(x)] = None
+        return rts
+
     def update(self, centroid, frame_num):
         centroid[0] = round(centroid[0],2)
         centroid[1] = round(centroid[1],2)
@@ -65,7 +73,7 @@ class SpeedVerticalObject:
                 for x in range(1, self.truthPoints + 1):
                     # if x == 1 or x == self.truthPoints:
                     #     continue
-                    if self.timestamp[str(x)] == 0:
+                    if self.timestamps[str(x)] == 0:
                         _pl = x
                         break
                 
@@ -74,16 +82,17 @@ class SpeedVerticalObject:
                     if _pl % self.truthPoints == 0:
                         if centroid[0] > self.flags[_pl_val]:
                             if centroid[0] < (self.flags[_pl_val] + self.flags[str(1)]):
-                                self.position[_pl_val] = centroid[:2]
+                                self.positions[_pl_val] = centroid[:2]
                             else:
-                                self.position[_pl_val] = [self.flags[_pl_val] + self.flags[str(1)], centroid[1]]
+                                self.positions[_pl_val] = [self.flags[_pl_val] + self.flags[str(1)], centroid[1]]
                             
-                            self.timestamp[_pl_val] = frame_num
+                            self.timestamps[_pl_val] = frame_num
+                            
                             self.lastPoint = True
                     else:
                         if centroid[0] > self.flags[_pl_val]:
-                            self.timestamp[_pl_val] = frame_num
-                            self.position[_pl_val] = centroid[:2]
+                            self.timestamps[_pl_val] = frame_num
+                            self.positions[_pl_val] = centroid[:2]
 
             elif self.direction < 0:
                 _pl = None
@@ -91,7 +100,7 @@ class SpeedVerticalObject:
                 for x in range(1, self.truthPoints + 1):
                     # if x == 1 or x == self.truthPoints:
                     #     continue
-                    if self.timestamp[str(x)] == 0:
+                    if self.timestamps[str(x)] == 0:
                         _pl = x
                         break
             
@@ -100,17 +109,17 @@ class SpeedVerticalObject:
                     if _pl % self.truthPoints == 0:
                         if centroid[0] < self.flags[str(1)]:
                             if centroid[0] > 0:
-                                self.position[_pl_val] = centroid[:2]
+                                self.positions[_pl_val] = centroid[:2]
                             else:
-                                self.position[_pl_val] = [0-self.flags[str(1)],centroid[1]]
-                            self.timestamp[_pl_val] = frame_num
+                                self.positions[_pl_val] = [0-self.flags[str(1)],centroid[1]]
+                            self.timestamps[_pl_val] = frame_num
                             self.lastPoint = True
                     else:
                         if centroid[0] < self.flags[str(self.truthPoints + 1 - _pl)]:
-                            self.timestamp[_pl_val] = frame_num
-                            self.position[_pl_val] = centroid[:2]
+                            self.timestamps[_pl_val] = frame_num
+                            self.positions[_pl_val] = centroid[:2]
     
-    def custom_speed(self):
+    def customSpeed(self):
         estimatedSpeeds = []
         custom = self.posCustom if self.direction > 0 else self.neCustom
         for (i, j) in self.points:
@@ -121,11 +130,16 @@ class SpeedVerticalObject:
         
         return estimatedSpeeds
 
-
-    def calculate_average_speed(self):
-        _estimate = self.custom_speed()
+    def calAverageSpeed(self):
+        _estimate = self.customSpeed()
         
         avera_speed = np.average(_estimate)
         
         self.speed = round(avera_speed, 1)
         self.estimated = True
+    
+    def calRealTime(self, fps):
+        for i in range(1, self.truthPoints + 1):
+            if self.timestamps[str(i)] != 0:
+                _time = round(self.timestamps[str(i)] / fps, 2)
+                self.realtimes[str(i)] = convertSecondToMinute(_time)
