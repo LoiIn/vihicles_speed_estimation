@@ -24,8 +24,9 @@ def calculate_speed(_obj, fps, asRt, start_time):
             
             speed = d / t 
             _asRt = asRt if asRt is not None else _obj.scale 
-            _obj.speeds[i+j] = round(speed * 3.6 / _asRt, 2)
+            _obj.speeds[i+j] = round(speed * 3.6 / _asRt,2)
             # estimatedSpeeds.append(round(speed * 3.6 / _asRt, 2))
 
     if lenCheck == _obj.truthPoints - 1:
+        print("hihi")
         _obj.calculate_average_speed()

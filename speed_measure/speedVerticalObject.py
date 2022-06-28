@@ -117,7 +117,7 @@ class SpeedVerticalObject:
             if int(i) != self.truthPoints:
                 if self.speeds[i+j] is not None:
                     self.speeds[i+j] += custom
-                    estimatedSpeeds.append(self.speeds[i+j])
+                    estimatedSpeeds.append(round(self.speeds[i+j],2))
         
         return estimatedSpeeds
 

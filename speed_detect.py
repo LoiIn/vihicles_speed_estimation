@@ -219,7 +219,7 @@ def main(_argv):
             # cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),2)
             
             centroid = format_center_point(bbox)
-            cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 2, (255, 0, 0), 1)
+            cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
             if _i not in objSpeed:            
                 if FLAGS.video_type == 0:
                     objSpeed[_i] = vertObjSpeed(_i, centroid, color, _flags, FLAGS.points, FLAGS.custom1, FLAGS.custom2)
@@ -239,14 +239,14 @@ def main(_argv):
                     cv2.putText(frame,str(objSpeed[_i].speeds[str_x]),(int(bbox[0]) + 150, int(bbox[1]) - 10),0, text_size, (255,0,0),2*text_size)
                     break
             
-            # if objSpeed[_i].speed is not None and not objSpeed[_i].logged: 
-            csv_data['ID'].append(_i)
-            csv_data['ClassName'].append(track.get_class())
-            csv_data["Speed"].append(objSpeed[_i].speed)
-            csv_data["Speeds"].append(objSpeed[_i].speeds)
-            csv_data["Position"].append(objSpeed[_i].position)
-            csv_data["Timestamp"].append(objSpeed[_i].timestamp)
-            objSpeed[_i].logged = True
+            if objSpeed[_i].speed is not None and not objSpeed[_i].logged: 
+                csv_data['ID'].append(_i)
+                csv_data['ClassName'].append(track.get_class())
+                csv_data["Speed"].append(objSpeed[_i].speed)
+                csv_data["Speeds"].append(objSpeed[_i].speeds)
+                csv_data["Position"].append(objSpeed[_i].position)
+                csv_data["Timestamp"].append(objSpeed[_i].timestamp)
+                objSpeed[_i].logged = True
             
         for f in _flags:
             if FLAGS.video_type == 0:
