@@ -78,21 +78,24 @@ class SpeedVerticalObject:
                         break
                 
                 if _pl is not None: 
+                    # dot = round(centroid[0] + centroid[2] / 2, 2)
+                    dot = round(centroid[0],2)
                     _pl_val = str(_pl)
-                    if _pl % self.truthPoints == 0:
-                        if centroid[0] > self.flags[_pl_val]:
-                            if centroid[0] < (self.flags[_pl_val] + self.flags[str(1)]):
-                                self.positions[_pl_val] = centroid[:2]
-                            else:
-                                self.positions[_pl_val] = [self.flags[_pl_val] + self.flags[str(1)], centroid[1]]
+                    if _pl == 1:
+                        self.timestamps['1'] = frame_num
+                    elif _pl == self.truthPoints:
+                        # if dot > self.flags[_pl_val]:
+                        #     if dot < (self.flags[_pl_val] + self.flags[str(1)]):
+                        #         self.positions[_pl_val] = [dot, centroid[1]]
+                        #     else:
+                        #         self.positions[_pl_val] = [self.flags[_pl_val] + self.flags[str(1)], centroid[1]]
                             
-                            self.timestamps[_pl_val] = frame_num
-                            
-                            self.lastPoint = True
+                        self.timestamps[_pl_val] = frame_num
+                        self.lastPoint = True
                     else:
-                        if centroid[0] > self.flags[_pl_val]:
+                        if dot > self.flags[_pl_val]:
                             self.timestamps[_pl_val] = frame_num
-                            self.positions[_pl_val] = centroid[:2]
+                            self.positions[_pl_val] = [dot, centroid[1]]
 
             elif self.direction < 0:
                 _pl = None
@@ -105,19 +108,23 @@ class SpeedVerticalObject:
                         break
             
                 if _pl is not None: 
+                    # dot = round(centroid[0] - centroid[2] / 2, 2)
+                    dot = round(centroid[0],2)
                     _pl_val = str(_pl)
-                    if _pl % self.truthPoints == 0:
-                        if centroid[0] < self.flags[str(1)]:
-                            if centroid[0] > 0:
-                                self.positions[_pl_val] = centroid[:2]
-                            else:
-                                self.positions[_pl_val] = [0-self.flags[str(1)],centroid[1]]
-                            self.timestamps[_pl_val] = frame_num
-                            self.lastPoint = True
+                    if _pl == 1:   
+                        self.timestamps['1'] = frame_num
+                    elif _pl == self.truthPoints:
+                        # if dot < self.flags[str(1)]:
+                        #     if dot > 0:
+                        #         self.positions[_pl_val] = [dot, centroid[1]]
+                        #     else:
+                        #         self.positions[_pl_val] = [0-self.flags[str(1)],centroid[1]]
+                        self.timestamps[_pl_val] = frame_num
+                        self.lastPoint = True
                     else:
-                        if centroid[0] < self.flags[str(self.truthPoints + 1 - _pl)]:
+                        if dot < self.flags[str(self.truthPoints + 1 - _pl)]:
                             self.timestamps[_pl_val] = frame_num
-                            self.positions[_pl_val] = centroid[:2]
+                            self.positions[_pl_val] = [dot, centroid[1]]
     
     def customSpeed(self):
         estimatedSpeeds = []

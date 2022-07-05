@@ -102,7 +102,7 @@ def main(_argv):
     _number_distances = FLAGS.points - 1
     _flags = {}
     for x in range(1, FLAGS.points + 1):
-        _flags[str(x)] = FLAGS.A_point + (x-1)*_estimated_distance / _number_distances
+        _flags[str(x)] = FLAGS.A_point + round((x-1)*_estimated_distance / _number_distances, 2)
     print(_flags)
 
     objSpeed = {}
@@ -111,8 +111,8 @@ def main(_argv):
         "ClassName" : [],
         "Speed" : [],
         "Speeds": [],
-        # "Positions": [],
-        # "Timestamps": []
+        "Positions": [],
+        "Timestamps": [],
         "Times": []
     }
 
@@ -216,7 +216,7 @@ def main(_argv):
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
-            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),2)
+            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),3)
             
             centroid = format_center_point(bbox)
             cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
@@ -244,18 +244,18 @@ def main(_argv):
                 csv_data['ClassName'].append(track.get_class())
                 csv_data["Speed"].append(objSpeed[_i].speed)
                 csv_data["Speeds"].append(objSpeed[_i].speeds)
-                # csv_data["Positions"].append(objSpeed[_i].positions)
-                # csv_data["Timestamps"].append(objSpeed[_i].timestamps)
+                csv_data["Positions"].append(objSpeed[_i].positions)
+                csv_data["Timestamps"].append(objSpeed[_i].timestamps)
                 csv_data["Times"].append(objSpeed[_i].realtimes)
                 objSpeed[_i].logged = True
             
         for f in _flags:
             if FLAGS.video_type == 0:
-                if int(f) != 1 and int(f) != FLAGS.points:
-                    cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
+                # if int(f) != 1 and int(f) != FLAGS.points:
+                cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
             else:
-                if int(f) != 1 and int(f) != FLAGS.points:
-                    cv2.line(frame, (0, int(_flags[f])), (_width, int(_flags[f])), (0,0,255), 2)
+                # if int(f) != 1 and int(f) != FLAGS.points:
+                cv2.line(frame, (0, int(_flags[f])), (_width, int(_flags[f])), (0,0,255), 2)
 
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -267,8 +267,8 @@ def main(_argv):
 
     if FLAGS.csv:
         path_csv = FLAGS.csv
-        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Position", "Timestamp"])
-        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Times"])
+        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
+        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Times"])
         df.to_csv(path_csv, index = False, header = True)
     cv2.destroyAllWindows()
 
