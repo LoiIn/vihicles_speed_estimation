@@ -22,5 +22,5 @@ def calculateSpeed(_obj, fps, asRt):
             _obj.speeds[i+j] = round(speed * 3.6 / _asRt,2)
 
     if _obj.timestamps[str(_obj.truthPoints)] != 0:
-        _obj.calAverageSpeed()
-        _obj.calRealTime(fps)
+        _obj.calculateAverageSpeed()
+        _obj.calculateRealTime(fps)

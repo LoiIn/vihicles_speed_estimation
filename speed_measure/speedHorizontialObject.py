@@ -22,10 +22,10 @@ class SpeedHorizontialObject:
         self.realtimes = self.initRealtimes(points + 1)
 
     def initPoints(self, points):
-        points = []
+        listP = []
         for x in range(1, points):
-            points.append((str(x), str(x + 1)))
-        return points
+            listP.append((str(x), str(x + 1)))
+        return listP
     
     def initTimestamp(self, points):
         timestamps = {}
