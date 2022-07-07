@@ -2,7 +2,7 @@ import numpy as np
 from speed_measure.utils import convertSecondToMinute
 
 class SpeedVerticalObject:
-    def __init__(self, objectID, centroid, color, flags, _points):
+    def __init__(self, objectID, centroid, color, flags, points):
         self.objectID = objectID
         self.centroids = [(round(centroid[0], 2), round(centroid[1], 2))]
         self.bbox = centroid
@@ -10,44 +10,44 @@ class SpeedVerticalObject:
         self.color = color
         self.direction = None
         self.flags = flags
-        self.points = self.initPoints(_points)
-        self.timestamps = self.initTimestamp(_points + 1)
-        self.speeds = self.initSpeeds(_points)
-        self.positions = self.initPosition(_points + 1)
+        self.points = self.initPoints(points)
+        self.timestamps = self.initTimestamp(points + 1)
+        self.speeds = self.initSpeeds(points)
+        self.positions = self.initPosition(points + 1)
         self.lastPoint = False
         self.estimated = False
         self.speed = None
-        self.logged = False    
-        self.truthPoints = _points
-        self.realtimes = self.initRealtimes(_points + 1)
+        self.logged = False
+        self.truthPoints = points
+        self.realtimes = self.initRealtimes(points + 1)
 
-    def initPoints(self, _points):
+    def initPoints(self, points):
         points = []
-        for x in range(1, _points):
+        for x in range(1, points):
             points.append((str(x), str(x + 1)))
         return points
     
-    def initTimestamp(self, _points):
+    def initTimestamp(self, points):
         timestamps = {}
-        for x in range(1, _points):
+        for x in range(1, points):
             timestamps[str(x)] = 0
         return timestamps
 
-    def initSpeeds(self, _points):
+    def initSpeeds(self, points):
         speeds = {}
-        for x in range(1, _points):
+        for x in range(1, points):
             speeds[str(x) + str(x+1)] = None
         return speeds
 
-    def initPosition(self, _points):
+    def initPosition(self, points):
         poses = {}
-        for x in range(1, _points):
+        for x in range(1, points):
             poses[str(x)] = None
         return poses
 
-    def initRealtimes(self, _points):
+    def initRealtimes(self, points):
         rts = {}
-        for x in range(1, _points):
+        for x in range(1, points):
             rts[str(x)] = None
         return rts
 
@@ -73,7 +73,7 @@ class SpeedVerticalObject:
                         _pl = x
                         break
                 
-                if _pl is not None: 
+                if _pl is not None:
                     # dot = round(centroid[0] + centroid[2] / 2, 2)
                     dot = round(centroid[1],2)
                     _pl_val = str(_pl)
@@ -121,7 +121,7 @@ class SpeedVerticalObject:
         return estimatedSpeeds
 
     def calAverageSpeed(self):
-        # _estimate = self.customSpeed()
+        _estimate = self.customSpeed()
         
         avera_speed = np.average(_estimate)
         

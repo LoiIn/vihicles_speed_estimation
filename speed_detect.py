@@ -2,7 +2,7 @@ from inspect import ArgSpec
 from multiprocessing.dummy import current_process
 import os
 
-from speed_measure.utils import format_center_point
+from speed_measure.utils import formatCenterPoint
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
@@ -216,7 +216,7 @@ def main(_argv):
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
             cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),3)
             
-            centroid = format_center_point(bbox)
+            centroid = formatCenterPoint(bbox)
             cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
             if _i not in objSpeed:            
                 if FLAGS.video_type == 0:
@@ -227,9 +227,9 @@ def main(_argv):
                 objSpeed[_i].update(centroid, frame_idx)
             
             if FLAGS.distance is not None:
-                measure.calculate_speed( objSpeed[_i], _fps, _width/FLAGS.distance)
+                measure.calculateSpeed( objSpeed[_i], _fps, _width/FLAGS.distance)
             else:
-                measure.calculate_speed( objSpeed[_i], _fps, None)
+                measure.calculateSpeed( objSpeed[_i], _fps, None)
 
             for x in range(1, FLAGS.points):
                 str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )

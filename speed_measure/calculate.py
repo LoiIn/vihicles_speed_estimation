@@ -1,17 +1,17 @@
 import math
 
-def per_distance(prevPos, curPos):
+def perDistance(prevPos, curPos):
     d = math.sqrt(math.pow(curPos[0] - prevPos[0], 2) + math.pow(curPos[1] - prevPos[1], 2))
     return d
 
-def calculate_speed(_obj, fps, asRt):
+def calculateSpeed(_obj, fps, asRt):
     if not _obj.estimated:
         for (i, j) in _obj.points:
             if i == '1' or int(j) == _obj.truthPoints:
                 continue
             if (_obj.positions[i] is None or _obj.positions[j] is None):
               break   
-            d = per_distance(_obj.positions[i], _obj.positions[j])
+            d = perDistance(_obj.positions[i], _obj.positions[j])
             frames = abs(_obj.timestamps[i] - _obj.timestamps[j])
             t = frames/fps
             if d == 0 or t == 0:  

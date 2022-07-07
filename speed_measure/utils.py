@@ -1,6 +1,6 @@
 import math
 
-def format_center_point(bbox):
+def formatCenterPoint(bbox):
     _width = bbox[2] - bbox[0]
     _height = bbox[3] - bbox[1]
     xcenter = bbox[0] + _width/2
