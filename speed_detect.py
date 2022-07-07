@@ -38,9 +38,7 @@ flags.DEFINE_float('distance', None, 'reality of distance')
 flags.DEFINE_integer('A_point', 40, 'define x position of cross line')
 flags.DEFINE_string('csv', None, 'Path to save csv file')
 flags.DEFINE_integer('points', 4, 'Number of truth point')
-flags.DEFINE_integer('video_type', 0, 'O: vertical, 1: horizontical')
-flags.DEFINE_float('custom1', 0, 'custom parametter for positive direction')
-flags.DEFINE_float('custom2', 0, 'custom parametter for negative direction')
+flags.DEFINE_integer('video_type', 0, 'O: horizontical, 1: vertical')
 
 from speed_measure.speedVerticalObject import SpeedVerticalObject as vertObjSpeed
 from speed_measure.speedHorizontialObject import SpeedHorizontialObject as horzObjSpeed
@@ -222,9 +220,9 @@ def main(_argv):
             cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
             if _i not in objSpeed:            
                 if FLAGS.video_type == 0:
-                    objSpeed[_i] = vertObjSpeed(_i, centroid, color, _flags, FLAGS.points, FLAGS.custom1, FLAGS.custom2)
+                    objSpeed[_i] = horzObjSpeed(_i, centroid, color, _flags, FLAGS.points)
                 elif FLAGS.video_type == 1:
-                    objSpeed[_i] = horzObjSpeed(_i, centroid, color, _flags, FLAGS.points)                    
+                    objSpeed[_i] = vertObjSpeed(_i, centroid, color, _flags, FLAGS.points)                    
             else:
                 objSpeed[_i].update(centroid, frame_idx)
             

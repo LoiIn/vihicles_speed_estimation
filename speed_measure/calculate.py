@@ -5,11 +5,8 @@ def per_distance(prevPos, curPos):
     return d
 
 def calculate_speed(_obj, fps, asRt):
-    print(_obj.timestamps)
-    lenCheck = 0
     if not _obj.estimated:
         for (i, j) in _obj.points:
-            lenCheck += 1
             if i == '1' or int(j) == _obj.truthPoints:
                 continue
             if (_obj.positions[i] is None or _obj.positions[j] is None):

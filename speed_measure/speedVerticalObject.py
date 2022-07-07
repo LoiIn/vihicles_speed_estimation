@@ -2,7 +2,7 @@ import numpy as np
 from speed_measure.utils import convertSecondToMinute
 
 class SpeedVerticalObject:
-    def __init__(self, objectID, centroid, color, flags, _points, custom1, custom2):
+    def __init__(self, objectID, centroid, color, flags, _points):
         self.objectID = objectID
         self.centroids = [(round(centroid[0], 2), round(centroid[1], 2))]
         self.bbox = centroid
@@ -19,8 +19,6 @@ class SpeedVerticalObject:
         self.speed = None
         self.logged = False    
         self.truthPoints = _points
-        self.posCustom = custom1
-        self.neCustom = custom2
         self.realtimes = self.initRealtimes(_points + 1)
 
     def initPoints(self, _points):
@@ -71,64 +69,49 @@ class SpeedVerticalObject:
                 _pl = None
                 _pl_val = None
                 for x in range(1, self.truthPoints + 1):
-                    # if x == 1 or x == self.truthPoints:
-                    #     continue
                     if self.timestamps[str(x)] == 0:
                         _pl = x
                         break
                 
                 if _pl is not None: 
                     # dot = round(centroid[0] + centroid[2] / 2, 2)
-                    dot = round(centroid[0],2)
+                    dot = round(centroid[1],2)
                     _pl_val = str(_pl)
                     if _pl == 1:
                         self.timestamps['1'] = frame_num
                     elif _pl == self.truthPoints:
-                        # if dot > self.flags[_pl_val]:
-                        #     if dot < (self.flags[_pl_val] + self.flags[str(1)]):
-                        #         self.positions[_pl_val] = [dot, centroid[1]]
-                        #     else:
-                        #         self.positions[_pl_val] = [self.flags[_pl_val] + self.flags[str(1)], centroid[1]]
-                            
                         self.timestamps[_pl_val] = frame_num
                         self.lastPoint = True
                     else:
                         if dot > self.flags[_pl_val]:
                             self.timestamps[_pl_val] = frame_num
-                            self.positions[_pl_val] = [dot, centroid[1]]
+                            self.positions[_pl_val] = [centroid[0], dot]
 
             elif self.direction < 0:
                 _pl = None
                 _pl_val = None
                 for x in range(1, self.truthPoints + 1):
-                    # if x == 1 or x == self.truthPoints:
-                    #     continue
                     if self.timestamps[str(x)] == 0:
                         _pl = x
                         break
             
                 if _pl is not None: 
                     # dot = round(centroid[0] - centroid[2] / 2, 2)
-                    dot = round(centroid[0],2)
+                    dot = round(centroid[1],2)
                     _pl_val = str(_pl)
                     if _pl == 1:   
                         self.timestamps['1'] = frame_num
                     elif _pl == self.truthPoints:
-                        # if dot < self.flags[str(1)]:
-                        #     if dot > 0:
-                        #         self.positions[_pl_val] = [dot, centroid[1]]
-                        #     else:
-                        #         self.positions[_pl_val] = [0-self.flags[str(1)],centroid[1]]
                         self.timestamps[_pl_val] = frame_num
                         self.lastPoint = True
                     else:
                         if dot < self.flags[str(self.truthPoints + 1 - _pl)]:
                             self.timestamps[_pl_val] = frame_num
-                            self.positions[_pl_val] = [dot, centroid[1]]
+                            self.positions[_pl_val] = [centroid[0], dot]
     
     def customSpeed(self):
         estimatedSpeeds = []
-        custom = self.posCustom if self.direction > 0 else self.neCustom
+        custom = 0
         for (i, j) in self.points:
             if int(i) != self.truthPoints:
                 if self.speeds[i+j] is not None:
@@ -138,7 +121,7 @@ class SpeedVerticalObject:
         return estimatedSpeeds
 
     def calAverageSpeed(self):
-        _estimate = self.customSpeed()
+        # _estimate = self.customSpeed()
         
         avera_speed = np.average(_estimate)
         
