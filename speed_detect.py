@@ -90,17 +90,17 @@ def main(_argv):
 
     # calculate size of text when put to output frame
     text_size = 1
-    if _width > 1600:
-        text_size *= 2
-    elif _width > 1200 and _width <= 1600:
-        text_size *= 1.5
+    # if _width > 1600:
+    #     text_size *= 2
+    # elif _width > 1200 and _width <= 1600:
+    #     text_size *= 1.5
    
    # Definition of speed estimation
-    _estimated_distance = (_width if FLAGS.video_type == 0 else _height) - FLAGS.A_point * 2
+    _estimated_distance = (_width * 2/3 if FLAGS.video_type == 0 else _height) - FLAGS.A_point * 2
     _number_distances = FLAGS.points - 1
     _flags = {}
     for x in range(1, FLAGS.points + 1):
-        _flags[str(x)] = FLAGS.A_point + round((x-1)*_estimated_distance / _number_distances, 2)
+        _flags[str(x)] = FLAGS.A_point + round((x-1)*_estimated_distance / _number_distances)
     print(_flags)
 
     objSpeed = {}
@@ -227,9 +227,9 @@ def main(_argv):
                 objSpeed[_i].update(centroid, frame_idx)
             
             if FLAGS.distance is not None:
-                measure.calculateSpeed( objSpeed[_i], _fps, _width/FLAGS.distance)
+                measure.calculateSpeed( objSpeed[_i], _fps, _width/FLAGS.distance, _width, _height)
             else:
-                measure.calculateSpeed( objSpeed[_i], _fps, None)
+                measure.calculateSpeed( objSpeed[_i], _fps, None, _width, _height)
 
             for x in range(1, FLAGS.points):
                 str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )
@@ -246,10 +246,11 @@ def main(_argv):
                 csv_data["Timestamps"].append(objSpeed[_i].timestamps)
                 csv_data["Times"].append(objSpeed[_i].realtimes)
                 objSpeed[_i].logged = True
-            
+
         for f in _flags:
             if FLAGS.video_type == 0:
                 # if int(f) != 1 and int(f) != FLAGS.points:
+                cv2.putText(frame,str(_flags[f]),(int(_flags[f]), _height - 20),0, text_size, (255,0,0),text_size)
                 cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
             else:
                 # if int(f) != 1 and int(f) != FLAGS.points:
