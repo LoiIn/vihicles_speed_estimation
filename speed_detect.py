@@ -44,6 +44,14 @@ from speed_measure.speedVerticalObject import SpeedVerticalObject as vertObjSpee
 from speed_measure.speedHorizontialObject import SpeedHorizontialObject as horzObjSpeed
 import pandas as pd
 
+# def init_cap(video_path):
+#      # begin video capture
+#     try:
+#         cap = cv2.VideoCapture(int(video_path))
+#         return cap
+#     except:
+#         return None
+
 def main(_argv):
     # Definition of the parameters for object tracking
     max_cosine_distance = 0.4
@@ -96,7 +104,7 @@ def main(_argv):
     #     text_size *= 1.5
    
    # Definition of speed estimation
-    _estimated_distance = (_width * 2/3 if FLAGS.video_type == 0 else _height) - FLAGS.A_point * 2
+    _estimated_distance = (_width if FLAGS.video_type == 0 else _height) - FLAGS.A_point * 2
     _number_distances = FLAGS.points - 1
     _flags = {}
     for x in range(1, FLAGS.points + 1):
@@ -118,7 +126,7 @@ def main(_argv):
     frame_idx = 0
     class_names = utils.read_class_names(cfg.YOLO.CLASSES)
     # allowed_classes = list(class_names.values())
-    allowed_classes = ['motorbike', 'car', 'bicycle', 'truck']
+    allowed_classes = ['motorbike']
 
     # while video is running
     while True:
@@ -246,6 +254,9 @@ def main(_argv):
                 csv_data["Timestamps"].append(objSpeed[_i].timestamps)
                 csv_data["Times"].append(objSpeed[_i].realtimes)
                 objSpeed[_i].logged = True
+
+        cv2.line(frame, (0, 750), (_width, 750), (0,0,255), 2)
+        cv2.line(frame, (0, _height), (_width, _height), (0,0,255), 2)
 
         for f in _flags:
             if FLAGS.video_type == 0:

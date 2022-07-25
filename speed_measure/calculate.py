@@ -10,9 +10,10 @@ def perDistance(prevPos, curPos):
     d = math.sqrt(math.pow(curPos[0] - prevPos[0], 2) + math.pow(curPos[1] - prevPos[1], 2))
     return d
 
-def calculateSpeed(_obj, fps, asRt, vW, wH):
+def calculateSpeed(_obj, fps, asRt, vW, vH):
     if not _obj.estimated:
-        asRt = calRectangle(wW, vH - 750) / calParallelogram(7.7, 2.5)
+        # asRt = round(calRectangle(vW, vH - 750) / calParallelogram(5, 12.05, 7.25), 4)
+        asRt = round(vW / 9.65, 3)
         for (i, j) in _obj.points:
             curPos = _obj.positions[i]
             prevPos = _obj.positions[j]

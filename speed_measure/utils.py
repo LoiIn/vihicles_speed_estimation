@@ -11,4 +11,9 @@ def convertSecondToMinute(time):
     i, d = math.modf(time)
     m = int(d // 60)
     s = int(d -m*60)
-    return str(m) + ':' + str(s) + ':' + str(int(i*100)) 
+    milisecond = ''
+    if i < 0.1:
+        milisecond = '0'
+    
+    milisecond += str(int(i*100))
+    return str(m) + ':' + str(s) + ':' + milisecond
