@@ -52,9 +52,9 @@ class SpeedHorizontialObject:
         return rts
 
     def update(self, centroid, frame_num):
+        self.bbox = centroid
         centroid[0] = round(centroid[0],2)
         centroid[1] = round(centroid[1],2)
-        self.bbox = centroid
         self.scale = centroid[2] / 1.908
         if not self.estimated:
             self.centroids.append(centroid[:2])
@@ -75,7 +75,8 @@ class SpeedHorizontialObject:
                 
                 if _pl is not None:
                     # dot = round(centroid[0] + centroid[2] / 2, 2)
-                    dot = round(centroid[0],2)
+                    xdot = round(centroid[0],2)
+                    ydot = round(centroid[1] + centroid[3] / 2)
                     _pl_val = str(_pl)
                     if _pl == 1:
                         self.timestamps['1'] = frame_num
@@ -83,9 +84,9 @@ class SpeedHorizontialObject:
                         self.timestamps[_pl_val] = frame_num
                         self.lastPoint = True
                     else:
-                        if dot > self.flags[_pl_val]:
+                        if xdot > self.flags[_pl_val]:
                             self.timestamps[_pl_val] = frame_num
-                            self.positions[_pl_val] = [dot, centroid[1]]
+                            self.positions[_pl_val] = [xdot, ydot]
 
             elif self.direction < 0:
                 _pl = None
@@ -97,7 +98,8 @@ class SpeedHorizontialObject:
             
                 if _pl is not None: 
                     # dot = round(centroid[0] - centroid[2] / 2, 2)
-                    dot = round(centroid[0],2)
+                    xdot = round(centroid[0],2)
+                    ydot = round(centroid[1] + centroid[3] / 2)
                     _pl_val = str(_pl)
                     if _pl == 1:
                         self.timestamps['1'] = frame_num
@@ -105,9 +107,9 @@ class SpeedHorizontialObject:
                         self.timestamps[_pl_val] = frame_num
                         self.lastPoint = True
                     else:
-                        if dot < self.flags[str(self.truthPoints + 1 - _pl)]:
+                        if xdot < self.flags[str(self.truthPoints + 1 - _pl)]:
                             self.timestamps[_pl_val] = frame_num
-                            self.positions[_pl_val] = [dot, centroid[1]]
+                            self.positions[_pl_val] = [xdot, ydot]
     
     def customSpeed(self):
         estimatedSpeeds = []

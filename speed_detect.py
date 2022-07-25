@@ -83,7 +83,7 @@ def main(_argv):
         vid = cv2.VideoCapture(video_path)
 
     # get video's attributes
-    _fps = int(vid.get(cv2.CAP_PROP_FPS))
+    _fps = vid.get(cv2.CAP_PROP_FPS)
     _width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     _height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
