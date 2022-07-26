@@ -58,7 +58,7 @@ def calculateSpeed(_obj, fps, asRt, vW, vH):
             
             speed = d / t 
             # _asRt = asRt if asRt is not None else _obj.scale 
-            _asRt = round(wW / getAsRt(curPos[1]),2)
+            _asRt = round(vW / getAsRt(curPos[1]),2)
             
             _obj.speeds[i+j] = round(speed * 3.6 / _asRt,2)
 

@@ -44,14 +44,6 @@ from speed_measure.speedVerticalObject import SpeedVerticalObject as vertObjSpee
 from speed_measure.speedHorizontialObject import SpeedHorizontialObject as horzObjSpeed
 import pandas as pd
 
-# def init_cap(video_path):
-#      # begin video capture
-#     try:
-#         cap = cv2.VideoCapture(int(video_path))
-#         return cap
-#     except:
-#         return None
-
 def main(_argv):
     # Definition of the parameters for object tracking
     max_cosine_distance = 0.4
@@ -116,9 +108,9 @@ def main(_argv):
         "ID" : [],
         "ClassName" : [],
         "Speed" : [],
-        "Speeds": [],
-        "Positions": [],
-        "Timestamps": [],
+        # "Speeds": [],
+        # "Positions": [],
+        # "Timestamps": [],
         "Times": []
     }
 
@@ -249,23 +241,23 @@ def main(_argv):
                 csv_data['ID'].append(_i)
                 csv_data['ClassName'].append(track.get_class())
                 csv_data["Speed"].append(objSpeed[_i].speed)
-                csv_data["Speeds"].append(objSpeed[_i].speeds)
-                csv_data["Positions"].append(objSpeed[_i].positions)
-                csv_data["Timestamps"].append(objSpeed[_i].timestamps)
-                csv_data["Times"].append(objSpeed[_i].realtimes)
+                # csv_data["Speeds"].append(objSpeed[_i].speeds)
+                # csv_data["Positions"].append(objSpeed[_i].positions)
+                # csv_data["Timestamps"].append(objSpeed[_i].timestamps)
+                csv_data["Times"].append(objSpeed[_i].realtimes['2'] + '-' + objSpeed[_i].realtimes['8'])
                 objSpeed[_i].logged = True
 
         cv2.line(frame, (0, 750), (_width, 750), (0,0,255), 2)
         cv2.line(frame, (0, _height), (_width, _height), (0,0,255), 2)
 
-        for f in _flags:
-            if FLAGS.video_type == 0:
-                # if int(f) != 1 and int(f) != FLAGS.points:
-                cv2.putText(frame,str(_flags[f]),(int(_flags[f]), _height - 20),0, text_size, (255,0,0),text_size)
-                cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
-            else:
-                # if int(f) != 1 and int(f) != FLAGS.points:
-                cv2.line(frame, (0, int(_flags[f])), (_width, int(_flags[f])), (0,0,255), 2)
+        # for f in _flags:
+        #     if FLAGS.video_type == 0:
+        #         # if int(f) != 1 and int(f) != FLAGS.points:
+        #         cv2.putText(frame,str(_flags[f]),(int(_flags[f]), _height - 20),0, text_size, (255,0,0),text_size)
+        #         cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
+        #     else:
+        #         # if int(f) != 1 and int(f) != FLAGS.points:
+        #         cv2.line(frame, (0, int(_flags[f])), (_width, int(_flags[f])), (0,0,255), 2)
 
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -277,8 +269,8 @@ def main(_argv):
 
     if FLAGS.csv:
         path_csv = FLAGS.csv
-        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
-        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Times"])
+        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
+        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Times"])
         df.to_csv(path_csv, index = False, header = True)
     cv2.destroyAllWindows()
 
