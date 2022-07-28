@@ -2,7 +2,7 @@ import numpy as np
 from speed_measure.utils import convertSecondToMinute
 
 class SpeedHorizontialObject:
-    def __init__(self, objectID, centroid, color, flags, points):
+    def __init__(self, objectID, centroid, color, flags, points, rwf, rws, vW, vH):
         self.objectID = objectID
         self.centroids = [(round(centroid[0], 2), round(centroid[1], 2))]
         self.bbox = centroid
@@ -20,6 +20,10 @@ class SpeedHorizontialObject:
         self.logged = False
         self.truthPoints = points
         self.realtimes = self.initRealtimes(points + 1)
+        self.rwf = rwf
+        self.rws = rws
+        self.videoWidth = vW
+        self.videoHeight = vH
 
     def initPoints(self, points):
         listP = []
@@ -136,3 +140,22 @@ class SpeedHorizontialObject:
                 _time = round(self.timestamps[str(i)] / fps, 2)
                 self.realtimes[str(i)] = convertSecondToMinute(_time)
 
+    def getLine(self, i):
+        _delta = abs(self.rws - self.rwf)
+        lineW = (_delta *(self.truthPoints - 1 - i))/ (self.truthPoints - 1)  + self.rwf
+        return lineW
+
+    def getAsRt(self, y, way):
+        points = self.truthPoints
+        vH = self.videoHeight
+        _detal = (vH - way) / (points - 1)
+
+        if y < way:
+            return self.rws
+        elif y > vH:
+            return self.rwf
+        else:
+            for i in range(1, points):
+                if y > vH - i*_detal and y < vH:
+                    return (self.getLine(points - i - 1) + self.getLine(points - i)) / 2
+        

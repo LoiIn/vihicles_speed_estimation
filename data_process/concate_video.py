@@ -36,7 +36,7 @@ def main(_argv):
     # _height = 400
     fps = 24
     codec = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(FLAGS.output, codec, fps, (1060, 400))
+    out = cv2.VideoWriter(FLAGS.output, codec, fps, (1140, 400))
 
     # _w, _h = FLAGS.output_w, FLAGS.output_h
     while True:
@@ -46,7 +46,7 @@ def main(_argv):
 
         if success1:
             try: 
-                frame1 = cv2.resize(frame1, (680, 400))
+                frame1 = cv2.resize(frame1, (760, 400))
                 frame2 = cv2.resize(frame2, (380, 200))
                 frame3 = cv2.resize(frame3, (380, 200))
             except:

@@ -34,7 +34,8 @@ flags.DEFINE_string('video', './data/video/test.mp4', 'path to input video or se
 flags.DEFINE_string('output', None, 'path to output video')
 flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
-flags.DEFINE_float('distance', None, 'reality of distance')
+flags.DEFINE_float('rwf', None, 'width first of screen in real world')
+flags.DEFINE_float('rws', None, 'width second of screen in real world')
 flags.DEFINE_integer('A_point', 40, 'define x position of cross line')
 flags.DEFINE_string('csv', None, 'Path to save csv file')
 flags.DEFINE_integer('points', 4, 'Number of truth point')
@@ -46,7 +47,7 @@ import pandas as pd
 
 def main(_argv):
     # Definition of the parameters for object tracking
-    max_cosine_distance = 0.4
+    max_cosine_distance = 0.6
     nn_budget = None
     nms_max_overlap = 1.0
     
@@ -79,13 +80,19 @@ def main(_argv):
     _width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     _height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
+    # line position by pixel that can contain way 
+    _way = 750
+    rwf = FLAGS.rwf
+    rws = FLAGS.rws
+
     # get video ready to save locally if flag is set
     out = None
     if FLAGS.output:
         width = _width
         height = _height
         fps = _fps
-        codec = cv2.VideoWriter_fourcc(*'XVID')
+        # codec = cv2.VideoWriter_fourcc(*'XVID')
+        codec = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
         out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
 
     # calculate size of text when put to output frame
@@ -108,9 +115,9 @@ def main(_argv):
         "ID" : [],
         "ClassName" : [],
         "Speed" : [],
-        # "Speeds": [],
-        # "Positions": [],
-        # "Timestamps": [],
+        "Speeds": [],
+        "Positions": [],
+        "Timestamps": [],
         "Times": []
     }
 
@@ -214,22 +221,19 @@ def main(_argv):
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
-            cv2.putText(frame,"v" + str(_i) + "-",(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),3)
+            cv2.putText(frame,"ID" + str(_i),(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),3)
             
-            centroid = formatCenterPoint(bbox)
+            centroid = formatCenterPoint(bbox) 
             cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
             if _i not in objSpeed:            
                 if FLAGS.video_type == 0:
-                    objSpeed[_i] = horzObjSpeed(_i, centroid, color, _flags, FLAGS.points)
+                    objSpeed[_i] = horzObjSpeed(_i, centroid, color, _flags, FLAGS.points, rwf, rws, _width, _height)
                 elif FLAGS.video_type == 1:
                     objSpeed[_i] = vertObjSpeed(_i, centroid, color, _flags, FLAGS.points)                    
             else:
                 objSpeed[_i].update(centroid, frame_idx)
             
-            if FLAGS.distance is not None:
-                measure.calculateSpeed( objSpeed[_i], _fps, _width/FLAGS.distance, _width, _height)
-            else:
-                measure.calculateSpeed( objSpeed[_i], _fps, None, _width, _height)
+            measure.calculateSpeed(objSpeed[_i], _fps, _width, _way)
 
             for x in range(1, FLAGS.points):
                 str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )
@@ -241,9 +245,9 @@ def main(_argv):
                 csv_data['ID'].append(_i)
                 csv_data['ClassName'].append(track.get_class())
                 csv_data["Speed"].append(objSpeed[_i].speed)
-                # csv_data["Speeds"].append(objSpeed[_i].speeds)
-                # csv_data["Positions"].append(objSpeed[_i].positions)
-                # csv_data["Timestamps"].append(objSpeed[_i].timestamps)
+                csv_data["Speeds"].append(objSpeed[_i].speeds)
+                csv_data["Positions"].append(objSpeed[_i].positions)
+                csv_data["Timestamps"].append(objSpeed[_i].timestamps)
                 csv_data["Times"].append(objSpeed[_i].realtimes['2'] + '-' + objSpeed[_i].realtimes['8'])
                 objSpeed[_i].logged = True
 
@@ -269,8 +273,8 @@ def main(_argv):
 
     if FLAGS.csv:
         path_csv = FLAGS.csv
-        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
-        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Times"])
+        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
+        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Times"])
         df.to_csv(path_csv, index = False, header = True)
     cv2.destroyAllWindows()
 
