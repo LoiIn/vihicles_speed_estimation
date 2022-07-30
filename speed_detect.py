@@ -2,7 +2,7 @@ from inspect import ArgSpec
 from multiprocessing.dummy import current_process
 import os
 
-from speed_measure.utils import formatCenterPoint
+from speed_measure.utils import formatCenterPoint, calSecondPositonInPixel
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
@@ -28,7 +28,7 @@ from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
 # flags.DEFINE_string('framework', 'tf', '(tf, tflite, trt')
-flags.DEFINE_string('weights', './checkpoints/yolov4-416', 'path to weights file')
+flags.DEFINE_string('weights', './weights/yolov4-416', 'path to weights file')
 flags.DEFINE_integer('size', 416, 'resize images to')
 flags.DEFINE_string('video', './data/video/test.mp4', 'path to input video or set to 0 for webcam')
 flags.DEFINE_string('output', None, 'path to output video')
@@ -36,9 +36,9 @@ flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_float('rwf', None, 'width first of screen in real world')
 flags.DEFINE_float('rws', None, 'width second of screen in real world')
-flags.DEFINE_integer('A_point', 40, 'define x position of cross line')
+flags.DEFINE_integer('A_point', None, 'define x position of cross line')
 flags.DEFINE_string('csv', None, 'Path to save csv file')
-flags.DEFINE_integer('points', 4, 'Number of truth point')
+flags.DEFINE_integer('points', 9, 'Number of truth point')
 flags.DEFINE_integer('video_type', 0, 'O: horizontical, 1: vertical')
 
 from speed_measure.speedVerticalObject import SpeedVerticalObject as vertObjSpeed
@@ -81,9 +81,10 @@ def main(_argv):
     _height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     # line position by pixel that can contain way 
-    _way = 750
     rwf = FLAGS.rwf
     rws = FLAGS.rws
+    _way= round(calSecondPositonInPixel(rwf, rws, _height))
+    print(_way)
 
     # get video ready to save locally if flag is set
     out = None
@@ -108,7 +109,7 @@ def main(_argv):
     _flags = {}
     for x in range(1, FLAGS.points + 1):
         _flags[str(x)] = FLAGS.A_point + round((x-1)*_estimated_distance / _number_distances)
-    print(_flags)
+    # print(_flags)
 
     objSpeed = {}
     csv_data = {

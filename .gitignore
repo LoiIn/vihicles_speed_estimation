@@ -1,0 +1,8 @@
+Lib
+pyvenv.cfg
+.env
+weights/
+outputs/
+__pycache__
+data/videos/
+data/yolov4.weights

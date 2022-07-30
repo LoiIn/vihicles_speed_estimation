@@ -17,3 +17,6 @@ def convertSecondToMinute(time):
     
     milisecond += str(int(i*100))
     return str(m) + ':' + str(s) + ':' + milisecond
+
+def calSecondPositonInPixel(rwf, rws, vH):
+    return (vH * rwf) / (rws - rwf)

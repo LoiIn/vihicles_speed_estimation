@@ -5,7 +5,7 @@ from core.yolov4 import YOLO, decode, filter_boxes
 import core.utils as utils
 
 flags.DEFINE_string('weights', './data/yolov4.weights', 'path to weights file')
-flags.DEFINE_string('output', './checkpoints/yolov4-416', 'path to output')
+flags.DEFINE_string('output', './weights/yolov4-416', 'path to weights folder')
 flags.DEFINE_integer('input_size', 416, 'define input size of export model')
 flags.DEFINE_float('score_thres', 0.2, 'define score threshold')
 

@@ -1,0 +1,8 @@
+opencv-python
+absl-py
+tensorflow
+matplotlib
+numpy
+pandas
+scipy
+easydict
