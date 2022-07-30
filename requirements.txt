@@ -1,8 +1,16 @@
+#common
 opencv-python
+easydict
+
+# for server
 absl-py
 tensorflow
 matplotlib
 numpy
 pandas
 scipy
-easydict
+
+# for api
+fastapi
+uvicorn
+jinja2
