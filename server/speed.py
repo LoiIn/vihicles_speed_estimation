@@ -2,13 +2,14 @@ from inspect import ArgSpec
 from multiprocessing.dummy import current_process
 import os
 
-from speed_measure.utils import formatCenterPoint, calSecondPositonInPixel
+from speed_measure.utils import formatCenterPoint, calSecondPositonInPixel, getVideoName
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
 import tensorflow as tf
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
+    print("you are using GPU")
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 from absl import app, flags
 from absl.flags import FLAGS
@@ -30,14 +31,13 @@ from tools import generate_detections as gdet
 # flags.DEFINE_string('framework', 'tf', '(tf, tflite, trt')
 flags.DEFINE_string('weights', './weights/yolov4-416', 'path to weights file')
 flags.DEFINE_integer('size', 416, 'resize images to')
-flags.DEFINE_string('video', './data/video/test.mp4', 'path to input video or set to 0 for webcam')
-flags.DEFINE_string('output', None, 'path to output video')
+flags.DEFINE_string('input', '../videos/u/vu1.mp4', 'path to input video or set to 0 for webcam')
+# flags.DEFINE_string('output', None, 'path to output video')
 flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_float('rwf', None, 'width first of screen in real world')
 flags.DEFINE_float('rws', None, 'width second of screen in real world')
-flags.DEFINE_integer('A_point', None, 'define x position of cross line')
-flags.DEFINE_string('csv', None, 'Path to save csv file')
+flags.DEFINE_integer('A_point', None, 'define first point positon')
 flags.DEFINE_integer('points', 9, 'Number of truth point')
 flags.DEFINE_integer('video_type', 0, 'O: horizontical, 1: vertical')
 
@@ -64,7 +64,7 @@ def main(_argv):
     config.gpu_options.allow_growth = True
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config()
     input_size = FLAGS.size
-    video_path = FLAGS.video
+    video_path = os.path.join('../videos/u',FLAGS.input)
 
     saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
     infer = saved_model_loaded.signatures['serving_default']
@@ -75,6 +75,14 @@ def main(_argv):
     except:
         vid = cv2.VideoCapture(video_path)
 
+    # get video's name and define csv and output location
+    timeFile = str(time.time())
+    _name = getVideoName(FLAGS.input)
+    CSV_PATH = './outputs/csv'
+    OUT_PATH = './outputs/mp4'
+    path_csv = os.path.join(CSV_PATH, timeFile + '-' +  _name + '.csv')
+    path_output = os.path.join(OUT_PATH, timeFile + '-' + _name + '.mp4')
+
     # get video's attributes
     _fps = vid.get(cv2.CAP_PROP_FPS)
     _width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -83,18 +91,13 @@ def main(_argv):
     # line position by pixel that can contain way 
     rwf = FLAGS.rwf
     rws = FLAGS.rws
-    _way= round(calSecondPositonInPixel(rwf, rws, _height))
-    print(_way)
+    _way= round(_height / 2)
 
     # get video ready to save locally if flag is set
     out = None
-    if FLAGS.output:
-        width = _width
-        height = _height
-        fps = _fps
-        # codec = cv2.VideoWriter_fourcc(*'XVID')
-        codec = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-        out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
+    # codec = cv2.VideoWriter_fourcc(*'XVID')
+    codec = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+    out = cv2.VideoWriter(path_output, codec, _fps, (_width, _height))
 
     # calculate size of text when put to output frame
     text_size = 1
@@ -109,7 +112,6 @@ def main(_argv):
     _flags = {}
     for x in range(1, FLAGS.points + 1):
         _flags[str(x)] = FLAGS.A_point + round((x-1)*_estimated_distance / _number_distances)
-    # print(_flags)
 
     objSpeed = {}
     csv_data = {
@@ -268,15 +270,13 @@ def main(_argv):
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         
         # if output flag is set, save video file
-        if FLAGS.output:
-            out.write(result)
+        out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
 
-    if FLAGS.csv:
-        path_csv = FLAGS.csv
-        df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
-        # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Times"])
-        df.to_csv(path_csv, index = False, header = True)
+    df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
+    # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Times"])
+    df.to_csv(path_csv, index = False, header = True)
+
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':

@@ -20,3 +20,6 @@ def convertSecondToMinute(time):
 
 def calSecondPositonInPixel(rwf, rws, vH):
     return (vH * rwf) / (rws - rwf)
+
+def getVideoName(originalName):
+    return originalName.split(".")[0]

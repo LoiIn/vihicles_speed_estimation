@@ -146,7 +146,7 @@ class SpeedHorizontialObject:
         return lineW
 
     def getAsRt(self, y, way):
-        points = self.truthPoints
+        points = 15
         vH = self.videoHeight
         _detal = (vH - way) / (points - 1)
 
