@@ -2,12 +2,11 @@ import numpy as np
 from speed_measure.utils import convertSecondToMinute
 
 class SpeedHorizontialObject:
-    def __init__(self, objectID, centroid, color, flags, points, rwf, rws, vW, vH):
+    def __init__(self, objectID, centroid, flags, points, rwf, rws, vW, vH):
         self.objectID = objectID
         self.centroids = [(round(centroid[0], 2), round(centroid[1], 2))]
         self.bbox = centroid
         self.scale = centroid[2] / 1.908
-        self.color = color
         self.direction = None
         self.flags = flags
         self.points = self.initPoints(points)

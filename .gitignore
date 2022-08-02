@@ -2,6 +2,6 @@
 server/weights/
 server/outputs/
 __pycache__
-server/data/videos/
 server/data/yolov4.weights
 videos/
+server/detections/

@@ -9,7 +9,7 @@ import time
 import tensorflow as tf
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
-    print("you are using GPU")
+    print("you are using GPU ...")
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 from absl import app, flags
 from absl.flags import FLAGS
@@ -28,11 +28,9 @@ from deep_sort import preprocessing, nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
-# flags.DEFINE_string('framework', 'tf', '(tf, tflite, trt')
-flags.DEFINE_string('weights', './weights/yolov4-416', 'path to weights file')
+flags.DEFINE_string('weights', './detections/yolov4-416', 'path to weights file')
 flags.DEFINE_integer('size', 416, 'resize images to')
-flags.DEFINE_string('input', '../videos/u/vu1.mp4', 'path to input video or set to 0 for webcam')
-# flags.DEFINE_string('output', None, 'path to output video')
+flags.DEFINE_string('input', './data/videos/vu1.mp4', 'path to input video')
 flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_float('rwf', None, 'width first of screen in real world')
@@ -64,7 +62,7 @@ def main(_argv):
     config.gpu_options.allow_growth = True
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config()
     input_size = FLAGS.size
-    video_path = os.path.join('../videos/u',FLAGS.input)
+    video_path = os.path.join(cfg.SPEED.INPUT, FLAGS.input)
 
     saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
     infer = saved_model_loaded.signatures['serving_default']
@@ -78,10 +76,8 @@ def main(_argv):
     # get video's name and define csv and output location
     timeFile = str(time.time())
     _name = getVideoName(FLAGS.input)
-    CSV_PATH = './outputs/csv'
-    OUT_PATH = './outputs/mp4'
-    path_csv = os.path.join(CSV_PATH, timeFile + '-' +  _name + '.csv')
-    path_output = os.path.join(OUT_PATH, timeFile + '-' + _name + '.mp4')
+    path_csv = os.path.join(cfg.SPEED.CSV, timeFile + '-' +  _name + '.csv')
+    path_output = os.path.join(cfg.SPEED.OUTPUT, timeFile + '-' + _name + '.mp4')
 
     # get video's attributes
     _fps = vid.get(cv2.CAP_PROP_FPS)
@@ -91,7 +87,7 @@ def main(_argv):
     # line position by pixel that can contain way 
     rwf = FLAGS.rwf
     rws = FLAGS.rws
-    _way= round(_height / 2)
+    _way = round(_height / 2)
 
     # get video ready to save locally if flag is set
     out = None
@@ -188,7 +184,6 @@ def main(_argv):
             else:
                 names.append(class_name)
         names = np.array(names)
-        count = len(names)
         
         # delete detections that are not in allowed_classes
         bboxes = np.delete(bboxes, deleted_indx, axis=0)
@@ -217,6 +212,7 @@ def main(_argv):
 
         # update tracks
         for track in tracker.tracks:
+            print("hihi")
             _i = track.track_id
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue 
@@ -230,9 +226,9 @@ def main(_argv):
             cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
             if _i not in objSpeed:            
                 if FLAGS.video_type == 0:
-                    objSpeed[_i] = horzObjSpeed(_i, centroid, color, _flags, FLAGS.points, rwf, rws, _width, _height)
+                    objSpeed[_i] = horzObjSpeed(_i, centroid, _flags, FLAGS.points, rwf, rws, _width, _height)
                 elif FLAGS.video_type == 1:
-                    objSpeed[_i] = vertObjSpeed(_i, centroid, color, _flags, FLAGS.points)                    
+                    objSpeed[_i] = vertObjSpeed(_i, centroid, _flags, FLAGS.points)                    
             else:
                 objSpeed[_i].update(centroid, frame_idx)
             
@@ -274,7 +270,7 @@ def main(_argv):
         if cv2.waitKey(1) & 0xFF == ord('q'): break
 
     df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
-    # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Times"])
+    df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Times"])
     df.to_csv(path_csv, index = False, header = True)
 
     cv2.destroyAllWindows()

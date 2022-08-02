@@ -45,4 +45,10 @@ __C.TEST.DECTECTED_IMAGE_PATH = "./data/detection/"
 __C.TEST.SCORE_THRESHOLD      = 0.25
 __C.TEST.IOU_THRESHOLD        = 0.5
 
+# SPEED options
+__C.SPEED                     = edict()
+
+__C.SPEED.OUTPUT              = "./outputs/mp4"
+__C.SPEED.CSV                 = "./outputs/csv"
+__C.SPEED.INPUT               = "./data/videos"
 
