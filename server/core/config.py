@@ -51,4 +51,4 @@ __C.SPEED                     = edict()
 __C.SPEED.OUTPUT              = "./outputs/mp4"
 __C.SPEED.CSV                 = "./outputs/csv"
 __C.SPEED.INPUT               = "./data/videos"
-__C.SPEED.IMG                 = "./data/imgs"
+__C.SPEED.IMG                 = "./outputs/imgs"

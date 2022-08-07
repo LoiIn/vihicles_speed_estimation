@@ -1,3 +1,4 @@
+from email.mime import image
 from inspect import ArgSpec
 from multiprocessing.dummy import current_process
 import os
@@ -6,11 +7,12 @@ from speed_measure.utils import formatCenterPoint, calSecondPositonInPixel, getV
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
+from datetime import date
 import tensorflow as tf
-# physical_devices = tf.config.experimental.list_physical_devices('GPU')
-# if len(physical_devices) > 0:
-#     print("you are using GPU ...")
-#     tf.config.experimental.set_memory_growth(physical_devices[0], True)
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+if len(physical_devices) > 0:
+    print("you are using GPU ...")
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
 from absl import app, flags
 from absl.flags import FLAGS
 import core.utils as utils
@@ -37,6 +39,7 @@ flags.DEFINE_float('rwf', None, 'width first of screen in real world')
 flags.DEFINE_float('rws', None, 'width second of screen in real world')
 flags.DEFINE_integer('A_point', 0, 'define first point positon')
 flags.DEFINE_integer('points', 9, 'Number of truth point')
+flags.DEFINE_integer('limit', 20, 'limit of speed')
 flags.DEFINE_integer('video_type', 0, 'O: horizontical, 1: vertical')
 
 from speed_measure.speedVerticalObject import SpeedVerticalObject as vertObjSpeed
@@ -62,7 +65,8 @@ def main(_argv):
     config.gpu_options.allow_growth = True
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config()
     input_size = FLAGS.size
-    video_path = FLAGS.input
+    video_path = os.path.join(cfg.SPEED.INPUT, FLAGS.input)
+    limit_speed = int(FLAGS.limit)
 
     saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
     infer = saved_model_loaded.signatures['serving_default']
@@ -74,10 +78,11 @@ def main(_argv):
         vid = cv2.VideoCapture(video_path)
 
     # get video's name and define csv and output location
-    timeFile = str(time.time())
+    today = date.today()
+    timeFile = today.strftime("%b-%d-%Y")
     _name = getVideoName(FLAGS.input)
-    path_csv = os.path.join(cfg.SPEED.CSV, timeFile + '-' +  _name + '.csv')
-    path_img = os.path.join(cfg.SPEED.IMG, timeFile + '-' + _name)
+    path_csv = os.path.join(cfg.SPEED.CSV, timeFile + '_' +  _name + '.csv')
+    path_img = os.path.join(cfg.SPEED.IMG, timeFile + '_' + _name)
     os.mkdir(path_img)
     
     # path_output = os.path.join(cfg.SPEED.OUTPUT, timeFile + '-' + _name + '.mp4')
@@ -227,6 +232,7 @@ def main(_argv):
             
             centroid = formatCenterPoint(bbox) 
             if centroid[0] > int(_width / 2) and not imgSaved:
+                imgSaved = True
                 imgCopy = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 beforeSaved = imgCopy.copy()
 
@@ -257,8 +263,8 @@ def main(_argv):
                 csv_data["Times"].append(objSpeed[_i].realtimes['3'] + '-' + objSpeed[_i].realtimes['8'])
                 objSpeed[_i].logged = True
 
-            if objSpeed[_i].logged and objSpeed[_i].speed > 20 and beforeSaved is not None:
-                imgName = os.path.join(path_img, str(_i) + "jpg")
+            if objSpeed[_i].logged and objSpeed[_i].speed > limit_speed and beforeSaved is not None:
+                imgName = os.path.join(path_img, str(_i) + ".jpg")
                 cv2.imwrite(imgName, beforeSaved)
 
         # cv2.line(frame, (0, 750), (_width, 750), (0,0,255), 2)
