@@ -3,19 +3,19 @@ from absl import app
 
 # data of sh in case unchange speed
 suXbar = ['t1', 't2', 't3', 't4', 't5', 't6']
-suData = [19.5, 17, 16.7, 17.8, 21.7, 22]
-suSys = [18.6, 17.6, 16.1, 19.5, 21.3, 23.3]
+suData = [20.4, 21.7, 22.3, 22, 23, 23.4]
+suSys = [20, 21, 21, 22, 22, 22]
 
-# data of sh in case unchange speed
-buXbar = ['t1', 't2', 't3', 't4', 't5', 't6', 't7']
-buData = [21.2, 23.4, 19.4, 31, 27, 16, 17.8]
-buSys = [22.1, 25.6, 21.8, 34.2, 27.5, 17.6, 19]
+# data of balde in case unchange speed
+buXbar = [ 't7', 't8', 't9', 't10', 't11', 't12']
+buData = [ 26.2, 26.1, 25.8, 25.8, 25.3, 24.7]
+buSys = [23, 23, 23, 23, 24, 24]
 def main(_argv):
     plt.plot(suXbar, suData, 'go-', label='data')
     plt.plot(suXbar, suSys, 'ro-', label='system')
-    # plt.plot(buXbar, buData, 'go-', label='data')
-    # plt.plot(buXbar, buSys, 'ro-', label='system')
-    plt.title('TĐTB thực tế và của hệ thống trong trường hợp đi đều')
+    plt.plot(buXbar, buData, 'go-', label='data')
+    plt.plot(buXbar, buSys, 'ro-', label='system')
+    plt.title('Trạng thái của xe 2')
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.legend(loc='best')

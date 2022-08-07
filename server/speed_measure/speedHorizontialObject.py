@@ -81,8 +81,8 @@ class SpeedHorizontialObject:
                     xdot = round(centroid[0],2)
                     ydot = round(centroid[1] + centroid[3] / 2)
                     _pl_val = str(_pl)
-                    if _pl == 1:
-                        self.timestamps['1'] = frame_num
+                    if _pl == 1 or _pl == 2:
+                        self.timestamps[_pl_val] = frame_num
                     elif _pl == self.truthPoints:
                         self.timestamps[_pl_val] = frame_num
                         self.lastPoint = True
@@ -104,8 +104,8 @@ class SpeedHorizontialObject:
                     xdot = round(centroid[0],2)
                     ydot = round(centroid[1] + centroid[3] / 2)
                     _pl_val = str(_pl)
-                    if _pl == 1:
-                        self.timestamps['1'] = frame_num
+                    if _pl == 1 or _pl == 2:
+                        self.timestamps[_pl_val] = frame_num
                     elif _pl == self.truthPoints:
                         self.timestamps[_pl_val] = frame_num
                         self.lastPoint = True
@@ -145,16 +145,16 @@ class SpeedHorizontialObject:
         return lineW
 
     def getAsRt(self, y, way):
-        points = 15
+        points = self.truthPoints
         vH = self.videoHeight
         _detal = (vH - way) / (points - 1)
 
-        if y < way:
+        if y <= way:
             return self.rws
-        elif y > vH:
+        elif y >= vH:
             return self.rwf
         else:
             for i in range(1, points):
-                if y > vH - i*_detal and y < vH:
+                if y >= vH - i*_detal and y <= vH - (i -1)*_detal:
                     return (self.getLine(points - i - 1) + self.getLine(points - i)) / 2
         

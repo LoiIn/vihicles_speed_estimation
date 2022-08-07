@@ -1,64 +1,47 @@
-from pandas import array
-from pyparsing import Optional
+from config import cfg
 import uvicorn
 from fastapi import FastAPI, Request, UploadFile, Response, Form, File
-from fastapi.responses import HTMLResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from fastapi.encoders import jsonable_encoder
 import os
-
-file_path = "videos/u/u1.mp4"
+from ..server.speed import main as service
+from utils import renderFileName
 
 app = FastAPI()
 
-origins = [
-    "http://localhost",
-    "https://localhost",
-    "http://localhost:3000",
-    "http://localhost:8080"
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=cfg.API.ORIGIN,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-PORT = 3000
-
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-templates = Jinja2Templates(directory="templates")
-
-class Data(BaseModel):
-    # video: UploadFile = File(),
-    rwf: str = Form(),
-    rws: str = Form(),
-    speed: str = Form()
-
+# test api
 @app.get("/")
 def root():
     return {"Hello": "World"}
 
-@app.get("/items/{id}", response_class=HTMLResponse)
-async def read_item(request: Request, id: str):
-    return templates.TemplateResponse("index.html", {"request": request, "id": id})
+# save video from client
+@app.post('/upload')
+async def root(video: bytes = File()):
+    fileName = renderFileName() + '.mp4'
+    filePath = os.path.join(cfg.API.DB, fileName)
+    f = open(filePath, 'wb')
+    f.write(video)
+    return fileName
 
-@app.post("/laravel")
-async def test_api(
-    video: UploadFile = File(),
-    rwf: str = Form(),
-    rws: str = Form(),
-    speed: str = Form()
+# run api
+@app.post("/excute")
+async def excute(
+    video: str = Form(),
+    type: str = Form(),
+    rwf: int = Form(),
+    rws: int = Form(),
+    speed: int = Form()
 ): 
-    return speed
-
-
+    test = service(video, rwf, rws, speed, 0)
+    print(test)
+    return "done"
+    
 if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=PORT)
+    uvicorn.run(app, host="localhost", port=cfg.API.PORT)

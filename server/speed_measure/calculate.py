@@ -9,7 +9,7 @@ def calculateSpeed(_obj, fps, vW, way):
         for (i, j) in _obj.points:
             prevPos = _obj.positions[i]
             curPos = _obj.positions[j]
-            if i == '1' or int(j) == _obj.truthPoints:
+            if i == '1' or i == '2' or int(j) == _obj.truthPoints:
                 continue
             if (curPos is None or prevPos is None):
               break   

@@ -7,10 +7,10 @@ from speed_measure.utils import formatCenterPoint, calSecondPositonInPixel, getV
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
 import tensorflow as tf
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-if len(physical_devices) > 0:
-    print("you are using GPU ...")
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+# physical_devices = tf.config.experimental.list_physical_devices('GPU')
+# if len(physical_devices) > 0:
+#     print("you are using GPU ...")
+#     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 from absl import app, flags
 from absl.flags import FLAGS
 import core.utils as utils
@@ -30,12 +30,12 @@ from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
 flags.DEFINE_string('weights', './detections/yolov4-416', 'path to weights file')
 flags.DEFINE_integer('size', 416, 'resize images to')
-flags.DEFINE_string('input', './data/videos/vu1.mp4', 'path to input video')
+flags.DEFINE_string('input', None, 'path to input video')
 flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_float('rwf', None, 'width first of screen in real world')
 flags.DEFINE_float('rws', None, 'width second of screen in real world')
-flags.DEFINE_integer('A_point', None, 'define first point positon')
+flags.DEFINE_integer('A_point', 0, 'define first point positon')
 flags.DEFINE_integer('points', 9, 'Number of truth point')
 flags.DEFINE_integer('video_type', 0, 'O: horizontical, 1: vertical')
 
@@ -62,7 +62,7 @@ def main(_argv):
     config.gpu_options.allow_growth = True
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config()
     input_size = FLAGS.size
-    video_path = os.path.join(cfg.SPEED.INPUT, FLAGS.input)
+    video_path = FLAGS.input
 
     saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
     infer = saved_model_loaded.signatures['serving_default']
@@ -77,7 +77,10 @@ def main(_argv):
     timeFile = str(time.time())
     _name = getVideoName(FLAGS.input)
     path_csv = os.path.join(cfg.SPEED.CSV, timeFile + '-' +  _name + '.csv')
-    path_output = os.path.join(cfg.SPEED.OUTPUT, timeFile + '-' + _name + '.mp4')
+    path_img = os.path.join(cfg.SPEED.IMG, timeFile + '-' + _name)
+    os.mkdir(path_img)
+    
+    # path_output = os.path.join(cfg.SPEED.OUTPUT, timeFile + '-' + _name + '.mp4')
 
     # get video's attributes
     _fps = vid.get(cv2.CAP_PROP_FPS)
@@ -87,13 +90,12 @@ def main(_argv):
     # line position by pixel that can contain way 
     rwf = FLAGS.rwf
     rws = FLAGS.rws
-    _way = round(_height / 2)
+    _way = 750
 
     # get video ready to save locally if flag is set
-    out = None
-    # codec = cv2.VideoWriter_fourcc(*'XVID')
-    codec = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-    out = cv2.VideoWriter(path_output, codec, _fps, (_width, _height))
+    # out = None
+    # codec = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+    # out = cv2.VideoWriter(path_output, codec, _fps, (_width, _height))
 
     # calculate size of text when put to output frame
     text_size = 1
@@ -149,7 +151,7 @@ def main(_argv):
 
         boxes, scores, classes, valid_detections = tf.image.combined_non_max_suppression(
             boxes=tf.reshape(boxes, (tf.shape(boxes)[0], -1, 1, 4)),
-            scores=tf.reshape(
+            scores=tf.reshape( 
                 pred_conf, (tf.shape(pred_conf)[0], -1, tf.shape(pred_conf)[-1])),
             max_output_size_per_class=50,
             max_total_size=50,
@@ -212,7 +214,8 @@ def main(_argv):
 
         # update tracks
         for track in tracker.tracks:
-            print("hihi")
+            imgSaved = False
+            beforeSaved = None
             _i = track.track_id
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue 
@@ -223,6 +226,10 @@ def main(_argv):
             cv2.putText(frame,"ID" + str(_i),(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),3)
             
             centroid = formatCenterPoint(bbox) 
+            if centroid[0] > int(_width / 2) and not imgSaved:
+                imgCopy = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                beforeSaved = imgCopy.copy()
+
             cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
             if _i not in objSpeed:            
                 if FLAGS.video_type == 0:
@@ -247,11 +254,15 @@ def main(_argv):
                 csv_data["Speeds"].append(objSpeed[_i].speeds)
                 csv_data["Positions"].append(objSpeed[_i].positions)
                 csv_data["Timestamps"].append(objSpeed[_i].timestamps)
-                csv_data["Times"].append(objSpeed[_i].realtimes['2'] + '-' + objSpeed[_i].realtimes['8'])
+                csv_data["Times"].append(objSpeed[_i].realtimes['3'] + '-' + objSpeed[_i].realtimes['8'])
                 objSpeed[_i].logged = True
 
-        cv2.line(frame, (0, 750), (_width, 750), (0,0,255), 2)
-        cv2.line(frame, (0, _height), (_width, _height), (0,0,255), 2)
+            if objSpeed[_i].logged and objSpeed[_i].speed > 20 and beforeSaved is not None:
+                imgName = os.path.join(path_img, str(_i) + "jpg")
+                cv2.imwrite(imgName, beforeSaved)
+
+        # cv2.line(frame, (0, 750), (_width, 750), (0,0,255), 2)
+        # cv2.line(frame, (0, _height), (_width, _height), (0,0,255), 2)
 
         # for f in _flags:
         #     if FLAGS.video_type == 0:
@@ -262,15 +273,14 @@ def main(_argv):
         #         # if int(f) != 1 and int(f) != FLAGS.points:
         #         cv2.line(frame, (0, int(_flags[f])), (_width, int(_flags[f])), (0,0,255), 2)
 
-        result = np.asarray(frame)
-        result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        # result = np.asarray(frame)
+        # result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         
         # if output flag is set, save video file
-        out.write(result)
+        # out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
 
     df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
-    df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Times"])
     df.to_csv(path_csv, index = False, header = True)
 
     cv2.destroyAllWindows()
