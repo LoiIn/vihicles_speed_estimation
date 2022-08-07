@@ -116,7 +116,7 @@ class SpeedHorizontialObject:
     
     def customSpeed(self):
         estimatedSpeeds = []
-        custom = 0
+        custom = -0.5 if self.direction < 0 else 0.5
         for (i, j) in self.points:
             if int(i) != self.truthPoints:
                 if self.speeds[i+j] is not None:

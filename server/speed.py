@@ -3,7 +3,7 @@ from inspect import ArgSpec
 from multiprocessing.dummy import current_process
 import os
 
-from speed_measure.utils import formatCenterPoint, calSecondPositonInPixel, getVideoName
+from speed_measure.utils import formatCenterPoint, renderFileName, getVideoName
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
@@ -82,8 +82,7 @@ def main(_argv):
     timeFile = today.strftime("%b-%d-%Y")
     _name = getVideoName(FLAGS.input)
     path_csv = os.path.join(cfg.SPEED.CSV, timeFile + '_' +  _name + '.csv')
-    path_img = os.path.join(cfg.SPEED.IMG, timeFile + '_' + _name)
-    os.mkdir(path_img)
+    # os.mkdir(path_img)
     
     # path_output = os.path.join(cfg.SPEED.OUTPUT, timeFile + '-' + _name + '.mp4')
 
@@ -231,7 +230,7 @@ def main(_argv):
             cv2.putText(frame,"ID" + str(_i),(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),3)
             
             centroid = formatCenterPoint(bbox) 
-            if centroid[0] > int(_width / 2) and not imgSaved:
+            if centroid[0] > int(_width / 3) and not imgSaved:
                 imgSaved = True
                 imgCopy = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 beforeSaved = imgCopy.copy()
@@ -264,7 +263,8 @@ def main(_argv):
                 objSpeed[_i].logged = True
 
             if objSpeed[_i].logged and objSpeed[_i].speed > limit_speed and beforeSaved is not None:
-                imgName = os.path.join(path_img, str(_i) + ".jpg")
+                cmpImg  = _name + "_" + str(_i) + renderFileName()
+                imgName = os.path.join(cfg.SPEED.IMG, cmpImg + ".jpg")
                 cv2.imwrite(imgName, beforeSaved)
 
         # cv2.line(frame, (0, 750), (_width, 750), (0,0,255), 2)

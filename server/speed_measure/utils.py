@@ -1,4 +1,6 @@
 import math
+from random import randint
+from datetime import date
 
 def formatCenterPoint(bbox):
     _width = bbox[2] - bbox[0]
@@ -23,3 +25,8 @@ def calSecondPositonInPixel(rwf, rws, vH):
 
 def getVideoName(originalName):
     return originalName.split(".")[0]
+
+def renderFileName():
+    obj= date.today()
+    ran = ''.join(["%s" % randint(0, 8) for num in range(0, 9)])
+    return obj.strftime("%%b-%d-%Y") + "_" + ran
