@@ -120,7 +120,7 @@ class SpeedHorizontialObject:
         for (i, j) in self.points:
             if int(i) != self.truthPoints:
                 if self.speeds[i+j] is not None:
-                    self.speeds[i+j] += custom
+                    self.speeds[i+j] += round(custom)
                     estimatedSpeeds.append(round(self.speeds[i+j],2))
         
         return estimatedSpeeds
