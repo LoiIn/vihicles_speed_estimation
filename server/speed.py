@@ -82,8 +82,6 @@ def main(_argv):
     timeFile = today.strftime("%b-%d-%Y")
     _name = getVideoName(FLAGS.input)
     path_csv = os.path.join(cfg.SPEED.CSV, timeFile + '_' +  _name + '.csv')
-    # os.mkdir(path_img)
-    
     # path_output = os.path.join(cfg.SPEED.OUTPUT, timeFile + '-' + _name + '.mp4')
 
     # get video's attributes
@@ -102,11 +100,11 @@ def main(_argv):
     # out = cv2.VideoWriter(path_output, codec, _fps, (_width, _height))
 
     # calculate size of text when put to output frame
-    text_size = 1
+    text_size = 1.5
     # if _width > 1600:
-    #     text_size *= 2
+    #     text_size *= 1.6
     # elif _width > 1200 and _width <= 1600:
-    #     text_size *= 1.5
+    #     text_size *= 1.2
    
    # Definition of speed estimation
     _estimated_distance = (_width if FLAGS.video_type == 0 else _height) - FLAGS.A_point * 2
@@ -116,6 +114,10 @@ def main(_argv):
         _flags[str(x)] = FLAGS.A_point + round((x-1)*_estimated_distance / _number_distances)
 
     objSpeed = {}
+    imgSaved = {}
+    beforeSaved = {}
+    imgCaptured = {}
+
     csv_data = {
         "ID" : [],
         "ClassName" : [],
@@ -216,11 +218,8 @@ def main(_argv):
         tracker.predict()
         tracker.update(detections)
 
-        imgSaved = None
-        beforeSaved = None
         # update tracks
         for track in tracker.tracks:
-           
             _i = track.track_id
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue 
@@ -229,10 +228,7 @@ def main(_argv):
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
             cv2.putText(frame,"ID" + str(_i),(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),3)
-
-            imgSaved[_i] = True
-            beforeSaved[_i] = None
-            
+              
             centroid = formatCenterPoint(bbox) 
         
             cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
@@ -246,17 +242,25 @@ def main(_argv):
             
             measure.calculateSpeed(objSpeed[_i], _fps, _width, _way)
 
-            # for x in range(1, FLAGS.points):
-            #     str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )
-            #     if objSpeed[_i].speeds[str_x] is not None and objSpeed[_i].speeds[str_x] > 3.0:
-            #         cv2.putText(frame,str(objSpeed[_i].speeds[str_x]),(int(bbox[0]) + 150, int(bbox[1]) - 10),0, text_size, (255,0,0),2*text_size)
-            #         break
+            for x in range(1, FLAGS.points):
+                str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )
+                if objSpeed[_i].speeds[str_x] is not None and objSpeed[_i].speeds[str_x] > 3.0:
+                    cv2.putText(frame,str(objSpeed[_i].speeds[str_x]),(int(bbox[0]) + 150, int(bbox[1]) - 10),0, text_size, (255,0,0),2*text_size)
+                    break
 
-            if not imgSaved[_i] and objSpeed[_i].direction is not None:
-                if (objSpeed[_i].direction > 0 and centroid[0] > _width / 2) or (objSpeed[_i].direction < 0 and centroid[0] < _width / 2):
-                    imgSaved[_i] = True
-                    imgCopy = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                    beforeSaved[_i] = imgCopy.copy()
+            if _i not in imgSaved:
+                imgSaved[_i] = False
+                beforeSaved[_i] = None
+                imgCaptured[_i] = False
+            else:
+                if not imgSaved[_i]:
+                    imgSaved[_i] = False
+
+                if not imgSaved[_i] and objSpeed[_i].direction is not None:
+                    if (objSpeed[_i].direction > 0 and centroid[0] > _width / 2) or (objSpeed[_i].direction < 0 and centroid[0] < _width / 2):
+                        imgSaved[_i] = True
+                        imgCopy = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                        beforeSaved[_i] = imgCopy.copy()
 
             
             if objSpeed[_i].speed is not None and not objSpeed[_i].logged: 
@@ -268,11 +272,13 @@ def main(_argv):
                 csv_data["Timestamps"].append(objSpeed[_i].timestamps)
                 csv_data["Times"].append(objSpeed[_i].realtimes['3'] + '-' + objSpeed[_i].realtimes['8'])
                 objSpeed[_i].logged = True
-
+        
             if objSpeed[_i].logged and objSpeed[_i].speed > limit_speed and beforeSaved[_i] is not None:
-                cmpImg  = _name + "_" + str(_i) + renderFileName()
-                imgName = os.path.join(cfg.SPEED.IMG, cmpImg + ".jpg")
-                cv2.imwrite(imgName, beforeSaved[_i])
+                if not imgCaptured[_i]:
+                    cmpImg  = _name + "_" + str(_i) + renderFileName()
+                    imgName = os.path.join(cfg.SPEED.IMG, cmpImg + ".jpg")
+                    cv2.imwrite(imgName, beforeSaved[_i])
+                    imgCaptured[_i] = True
 
         # cv2.line(frame, (0, 750), (_width, 750), (0,0,255), 2)
         # cv2.line(frame, (0, _height), (_width, _height), (0,0,255), 2)
