@@ -37,10 +37,9 @@ flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_float('rwf', None, 'width first of screen in real world')
 flags.DEFINE_float('rws', None, 'width second of screen in real world')
-flags.DEFINE_integer('A_point', 0, 'define first point positon')
 flags.DEFINE_integer('points', 9, 'Number of truth point')
 flags.DEFINE_integer('limit', 20, 'limit of speed')
-flags.DEFINE_integer('video_type', 0, 'O: horizontical, 1: vertical')
+flags.DEFINE_string('save_video', False, 'save output or none')
 
 from speed_measure.speedVerticalObject import SpeedVerticalObject as vertObjSpeed
 from speed_measure.speedHorizontialObject import SpeedHorizontialObject as horzObjSpeed
@@ -82,7 +81,6 @@ def main(_argv):
     timeFile = today.strftime("%b-%d-%Y")
     _name = getVideoName(FLAGS.input)
     path_csv = os.path.join(cfg.SPEED.CSV, timeFile + '_' +  _name + '.csv')
-    # path_output = os.path.join(cfg.SPEED.OUTPUT, timeFile + '-' + _name + '.mp4')
 
     # get video's attributes
     _fps = vid.get(cv2.CAP_PROP_FPS)
@@ -95,29 +93,34 @@ def main(_argv):
     _way = 750
 
     # get video ready to save locally if flag is set
-    # out = None
-    # codec = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-    # out = cv2.VideoWriter(path_output, codec, _fps, (_width, _height))
+    if FLAGS.save_video:
+        path_output = os.path.join(cfg.SPEED.OUTPUT, timeFile + '-' + _name + '.mp4')
+        out = None
+        codec = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+        out = cv2.VideoWriter(path_output, codec, _fps, (_width, _height))
 
     # calculate size of text when put to output frame
     text_size = 1.5
-    # if _width > 1600:
-    #     text_size *= 1.6
-    # elif _width > 1200 and _width <= 1600:
-    #     text_size *= 1.2
+    if _width > 1600:
+        text_size *= 1.6
+    elif _width > 1200 and _width <= 1600:
+        text_size *= 1.2
    
    # Definition of speed estimation
-    _estimated_distance = (_width if FLAGS.video_type == 0 else _height) - FLAGS.A_point * 2
+   # Use array to archives of the point used to truncated 
+    _estimated_distance = _width
     _number_distances = FLAGS.points - 1
     _flags = {}
     for x in range(1, FLAGS.points + 1):
-        _flags[str(x)] = FLAGS.A_point + round((x-1)*_estimated_distance / _number_distances)
+        _flags[str(x)] = round((x-1)*_estimated_distance / _number_distances)
 
+    # Definition variables for save iamge of the vihicles, which have speed > limit_speed
     objSpeed = {}
     imgSaved = {}
     beforeSaved = {}
     imgCaptured = {}
 
+    # prepare csv's contents
     csv_data = {
         "ID" : [],
         "ClassName" : [],
@@ -223,31 +226,33 @@ def main(_argv):
             _i = track.track_id
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue 
+
+            # get bbox and put ID to frame
             bbox = track.to_tlbr()
             color = colors[track.track_id % len(colors)]
             color = [j * 255 for j in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
             cv2.putText(frame,"ID" + str(_i),(int(bbox[0]), int(bbox[1]) - 10),0, 1, (255,0,0),3)
-              
+            
             centroid = formatCenterPoint(bbox) 
-        
-            cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
+
+            # initialization speed and update speeds of vihicles
             if _i not in objSpeed:            
-                if FLAGS.video_type == 0:
-                    objSpeed[_i] = horzObjSpeed(_i, centroid, _flags, FLAGS.points, rwf, rws, _width, _height)
-                elif FLAGS.video_type == 1:
-                    objSpeed[_i] = vertObjSpeed(_i, centroid, _flags, FLAGS.points)                    
+                objSpeed[_i] = horzObjSpeed(_i, centroid, _flags, FLAGS.points, rwf, rws, _width, _height)                
             else:
                 objSpeed[_i].update(centroid, frame_idx)
             
             measure.calculateSpeed(objSpeed[_i], _fps, _width, _way)
 
-            for x in range(1, FLAGS.points):
-                str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )
-                if objSpeed[_i].speeds[str_x] is not None and objSpeed[_i].speeds[str_x] > 3.0:
-                    cv2.putText(frame,str(objSpeed[_i].speeds[str_x]),(int(bbox[0]) + 150, int(bbox[1]) - 10),0, text_size, (255,0,0),2*text_size)
-                    break
+            cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
 
+            # for x in range(1, FLAGS.points):
+            #     str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )
+            #     if objSpeed[_i].speeds[str_x] is not None and objSpeed[_i].speeds[str_x] > 3.0:
+            #         cv2.putText(frame,str(objSpeed[_i].speeds[str_x]),(int(bbox[0]) + 150, int(bbox[1]) - 10),0, text_size, (255,0,0),2*text_size)
+            #         break
+
+            # Prepare the frame to save the image contain vihicles have speed > limit_speed
             if _i not in imgSaved:
                 imgSaved[_i] = False
                 beforeSaved[_i] = None
@@ -262,17 +267,18 @@ def main(_argv):
                         imgCopy = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                         beforeSaved[_i] = imgCopy.copy()
 
-            
-            if objSpeed[_i].speed is not None and not objSpeed[_i].logged: 
+            # save info of vihicles to csv
+            if objSpeed[_i].speed is not None and not objSpeed[_i].logged and objSpeed[_i].speed > limit_speed: 
                 csv_data['ID'].append(_i)
                 csv_data['ClassName'].append(track.get_class())
                 csv_data["Speed"].append(objSpeed[_i].speed)
                 csv_data["Speeds"].append(objSpeed[_i].speeds)
                 csv_data["Positions"].append(objSpeed[_i].positions)
                 csv_data["Timestamps"].append(objSpeed[_i].timestamps)
-                csv_data["Times"].append(objSpeed[_i].realtimes['3'] + '-' + objSpeed[_i].realtimes['8'])
+                csv_data["Times"].append(objSpeed[_i].realtimes['2'] + '-' + objSpeed[_i].realtimes[str(FLAGS.points - 1)])
                 objSpeed[_i].logged = True
-        
+
+            # if speed > limit_speed, export frame contained object
             if objSpeed[_i].logged and objSpeed[_i].speed > limit_speed and beforeSaved[_i] is not None:
                 if not imgCaptured[_i]:
                     cmpImg  = _name + "_" + str(_i) + renderFileName()
@@ -280,9 +286,7 @@ def main(_argv):
                     cv2.imwrite(imgName, beforeSaved[_i])
                     imgCaptured[_i] = True
 
-        # cv2.line(frame, (0, 750), (_width, 750), (0,0,255), 2)
-        # cv2.line(frame, (0, _height), (_width, _height), (0,0,255), 2)
-
+        # draw line cutted frame
         # for f in _flags:
         #     if FLAGS.video_type == 0:
         #         # if int(f) != 1 and int(f) != FLAGS.points:
@@ -292,13 +296,15 @@ def main(_argv):
         #         # if int(f) != 1 and int(f) != FLAGS.points:
         #         cv2.line(frame, (0, int(_flags[f])), (_width, int(_flags[f])), (0,0,255), 2)
 
-        # result = np.asarray(frame)
-        # result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        # save output video
+        if FLAGS.save_video:
+            result = np.asarray(frame)
+            result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            out.write(result)
         
-        # if output flag is set, save video file
-        # out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
 
+    # save csv file
     df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
     df.to_csv(path_csv, index = False, header = True)
 

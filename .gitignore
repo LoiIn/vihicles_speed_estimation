@@ -5,3 +5,4 @@ __pycache__
 server/data/yolov4.weights
 videos/
 server/detections/
+setup-guide.txt
