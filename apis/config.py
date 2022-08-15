@@ -21,3 +21,4 @@ __C.API.ORIGIN          =  [
                         ]
                     
 __C.API.DB              = "DB"
+__C.API.CLOUD           = "speeds"

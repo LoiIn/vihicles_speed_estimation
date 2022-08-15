@@ -284,7 +284,9 @@ def run(
             if objSpeed[_i].logged and objSpeed[_i].speed > limit_speed and beforeSaved[_i] is not None:
                 if not imgCaptured[_i]:
                     imgName = os.path.join(path_client, str(_i) + ".jpg")
-                    cv2.imwrite(imgName, beforeSaved[_i])
+                    dim = (int(_width * 0.5), int(_height * 0.5))
+                    saveResize = cv2.resize(beforeSaved[_i], dim)
+                    cv2.imwrite(imgName, saveResize)
                     imgCaptured[_i] = True
 
         # save output video

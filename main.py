@@ -1,10 +1,10 @@
+from ntpath import join
 from apis.config import cfg
 import uvicorn
-from fastapi import FastAPI, Request, UploadFile, Response, Form, File
+from fastapi import FastAPI, Form, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 import os
-# import server.test as test
 from apis.utils import renderFileName, getTypes
 from apis.firebase import storage
 import sys
@@ -29,19 +29,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get('/test')
-async def test():
-    saveFile()
-    return getLink("demo/test.csv")
-
 # test api
 @app.get("/")
 async def root():
     return {"Hello": "World"}
 
 # save video and return rs
-@app.post('/excute', response_class=FileResponse)
-async def root(
+@app.post('/excute', response_class=PlainTextResponse)
+async def excute(
     video: bytes = File(),
     rwf: float = Form(),
     rws: float = Form(),
@@ -58,16 +53,32 @@ async def root(
     # return clientDir
     demo.run(input=clientName, rwf=rwf, rws=rws, limit=limit, client=clientDir, types = getTypes(type))
     
-    responseFilePath = os.path.join(ROOT / cfg.API.DB, clientDir + '/' + 'speed.csv')
-    return responseFilePath
+    saveFile(clientDir)
+    rs = getLink(clientDir)
+    return rs
 
-def saveFile():
-    path_on_cloud = "speed"
-    path_local = os.path.join(ROOT / cfg.API.DB, 'test.csv')
-    storage.child(path_on_cloud).put(path_local)
 
-def getLink(pathCloud):
-    return storage.child(pathCloud).get_url(None)
+@app.get('/test')
+async def get_all():
+    return getLink("ekthsudxh")
+
+def saveFile(dir):
+    path = os.path.join(ROOT / cfg.API.DB , dir)
+    files = os.listdir(path)
+    for f in files:
+        path_cloud = cfg.API.CLOUD + '/' + dir + '_' + f
+        path_local = os.path.join(path, f)
+        storage.child(path_cloud).put(path_local)
+
+def getLink(dir):
+    path = os.path.join(ROOT / cfg.API.DB , dir)
+    files = os.listdir(path)
+    listFiles = ''
+    for f in files:
+        path_cloud = 'speeds/' + dir + '_' + f
+        listFiles += storage.child(path_cloud).get_url(None) + ','
+    
+    return listFiles
     
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=cfg.API.PORT)
