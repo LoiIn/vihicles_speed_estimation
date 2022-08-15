@@ -1,12 +1,18 @@
-from email.mime import image
-from inspect import ArgSpec
-from multiprocessing.dummy import current_process
 import os
+from pathlib import Path
+import sys
+FILE = Path(__file__).resolve()
+ROOT = FILE.parents[0].parents[0]
+SERVER_ROOT = FILE.parents[0]
+
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+if str(ROOT / 'server') not in sys.path:
+    sys.path.append(str(ROOT / 'server'))
 
 from speed_measure.utils import formatCenterPoint, renderFileName, getVideoName
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-import time
 from datetime import date
 import tensorflow as tf
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
@@ -15,8 +21,6 @@ if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 else:
     print("not GPU")
-from absl import app, flags
-from absl.flags import FLAGS
 import core.utils as utils
 import speed_measure.calculate as measure
 # from core.yolov4 import filter_boxes
@@ -32,29 +36,31 @@ from deep_sort import preprocessing, nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
-flags.DEFINE_string('weights', './detections/yolov4-416', 'path to weights file')
-flags.DEFINE_integer('size', 416, 'resize images to')
-flags.DEFINE_string('input', None, 'path to input video')
-flags.DEFINE_float('iou', 0.45, 'iou threshold')
-flags.DEFINE_float('score', 0.50, 'score threshold')
-flags.DEFINE_float('rwf', None, 'width first of screen in real world')
-flags.DEFINE_float('rws', None, 'width second of screen in real world')
-flags.DEFINE_integer('points', 15, 'Number of truth point')
-flags.DEFINE_integer('limit', 20, 'limit of speed')
-flags.DEFINE_bool('save_video', False, 'save output or none')
-flags.DEFINE_string('client', None, 'fake database location')
 
 from speed_measure.speedHorizontialObject import SpeedHorizontialObject as horzObjSpeed
 import pandas as pd
 
-def main(_argv):
+def run(
+    # weights = WEIGHTS / 'yolov4-416',
+    size = 416,
+    input = None,
+    iou = 0.45,
+    score = 0.5,
+    rwf = None, 
+    rws = None, 
+    points = 15, 
+    limit = 20, 
+    save_video = False, 
+    client = None,
+    types = None
+):
     # Definition of the parameters for object tracking
     max_cosine_distance = 0.6
     nn_budget = None
     nms_max_overlap = 1.0
     
     # initialize deep sort
-    model_filename = 'model_data/mars-small128.pb'
+    model_filename = 'server/model_data/mars-small128.pb'
     encoder = gdet.create_box_encoder(model_filename, batch_size=1)
     # calculate cosine distance metric
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
@@ -65,11 +71,11 @@ def main(_argv):
     config = ConfigProto()
     config.gpu_options.allow_growth = True
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config()
-    input_size = FLAGS.size
-    video_path = os.path.join(cfg.SPEED.INPUT, FLAGS.input)
-    limit_speed = int(FLAGS.limit)
+    input_size = size
+    video_path = os.path.join(cfg.SPEED.INPUT, input)
+    limit_speed = limit
 
-    saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
+    saved_model_loaded = tf.saved_model.load('server/detections/yolov4-416', tags=[tag_constants.SERVING])
     infer = saved_model_loaded.signatures['serving_default']
 
     # begin video capture
@@ -81,10 +87,9 @@ def main(_argv):
     # get video's name and define csv and output location
     today = date.today()
     timeFile = today.strftime("%b-%d-%Y")
-    _name = getVideoName(FLAGS.input)
-    path_client = os.path.join(cfg.SPEED.CLIENT, FLAGS.client)
+    _name = getVideoName(input)
+    path_client = os.path.join(cfg.SPEED.CLIENT, client)
     os.mkdir(path_client)
-    # path_csv = os.path.join(path_client, timeFile + '_' +  _name + '.csv')
     path_csv = os.path.join(path_client, 'speed.csv')
 
     # get video's attributes
@@ -93,12 +98,12 @@ def main(_argv):
     _height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     # line position by pixel that can contain way 
-    rwf = FLAGS.rwf
-    rws = FLAGS.rws
+    rwf = rwf
+    rws = rws
     _way = 750
 
     # get video ready to save locally if flag is set
-    if FLAGS.save_video:
+    if save_video:
         path_output = os.path.join(cfg.SPEED.OUTPUT, timeFile + '-' + _name + '.mp4')
         out = None
         codec = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
@@ -114,9 +119,9 @@ def main(_argv):
    # Definition of speed estimation
    # Use array to archives of the point used to truncated 
     _estimated_distance = _width
-    _number_distances = FLAGS.points - 1
+    _number_distances = points - 1
     _flags = {}
-    for x in range(1, FLAGS.points + 1):
+    for x in range(1, points + 1):
         _flags[str(x)] = round((x-1)*_estimated_distance / _number_distances)
 
     # Definition variables for save iamge of the vihicles, which have speed > limit_speed
@@ -130,17 +135,18 @@ def main(_argv):
         "ID" : [],
         "ClassName" : [],
         "Speed" : [],
-        # "Speeds": [],
-        # "Positions": [],
-        # "Timestamps": [],
         "Times": []
     }
 
     # others definition
+    allowed_classes = None
+    class_names = utils.read_class_names(ROOT / cfg.YOLO.CLASSES)
     frame_idx = 0
-    class_names = utils.read_class_names(cfg.YOLO.CLASSES)
-    # allowed_classes = list(class_names.values())
-    allowed_classes = ['motorbike']
+    if types[0] == 'all':
+        allowed_classes = list(class_names.values())
+    # allowed_classes = ['motorbike']
+    else:
+        allowed_classes = types
 
     # while video is running
     while True:
@@ -170,8 +176,8 @@ def main(_argv):
                 pred_conf, (tf.shape(pred_conf)[0], -1, tf.shape(pred_conf)[-1])),
             max_output_size_per_class=50,
             max_total_size=50,
-            iou_threshold=FLAGS.iou,
-            score_threshold=FLAGS.score
+            iou_threshold=iou,
+            score_threshold=score
         )
 
         # convert data to numpy arrays and slice out unused elements
@@ -243,19 +249,13 @@ def main(_argv):
 
             # initialization speed and update speeds of vihicles
             if _i not in objSpeed:            
-                objSpeed[_i] = horzObjSpeed(_i, centroid, _flags, FLAGS.points, rwf, rws, _width, _height)                
+                objSpeed[_i] = horzObjSpeed(_i, centroid, _flags, points, rwf, rws, _width, _height)                
             else:
                 objSpeed[_i].update(centroid, frame_idx)
             
             measure.calculateSpeed(objSpeed[_i], _fps, _width, _way)
 
             cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 10, (255, 0, 0), 5)
-
-            # for x in range(1, FLAGS.points):
-            #     str_x = str(FLAGS.points - x) + str(FLAGS.points + 1 - x )
-            #     if objSpeed[_i].speeds[str_x] is not None and objSpeed[_i].speeds[str_x] > 3.0:
-            #         cv2.putText(frame,str(objSpeed[_i].speeds[str_x]),(int(bbox[0]) + 150, int(bbox[1]) - 10),0, text_size, (255,0,0),2*text_size)
-            #         break
 
             # Prepare the frame to save the image contain vihicles have speed > limit_speed
             if _i not in imgSaved:
@@ -277,33 +277,18 @@ def main(_argv):
                 csv_data['ID'].append(_i)
                 csv_data['ClassName'].append(track.get_class())
                 csv_data["Speed"].append(objSpeed[_i].speed)
-                # csv_data["Speeds"].append(objSpeed[_i].speeds)
-                # csv_data["Positions"].append(objSpeed[_i].positions)
-                # csv_data["Timestamps"].append(objSpeed[_i].timestamps)
-                csv_data["Times"].append(objSpeed[_i].realtimes['2'] + '-' + objSpeed[_i].realtimes[str(FLAGS.points - 1)])
+                csv_data["Times"].append(objSpeed[_i].realtimes['2'] + '-' + objSpeed[_i].realtimes[str(points - 1)])
                 objSpeed[_i].logged = True
 
             # if speed > limit_speed, export frame contained object
             if objSpeed[_i].logged and objSpeed[_i].speed > limit_speed and beforeSaved[_i] is not None:
                 if not imgCaptured[_i]:
-                    # cmpImg  = _name + "_" + str(_i) + renderFileName()
-                    # imgName = os.path.join(cfg.SPEED.IMG, cmpImg + ".jpg")
                     imgName = os.path.join(path_client, str(_i) + ".jpg")
                     cv2.imwrite(imgName, beforeSaved[_i])
                     imgCaptured[_i] = True
 
-        # draw line cutted frame
-        # for f in _flags:
-        #     if FLAGS.video_type == 0:
-        #         # if int(f) != 1 and int(f) != FLAGS.points:
-        #         cv2.putText(frame,str(_flags[f]),(int(_flags[f]), _height - 20),0, text_size, (255,0,0),text_size)
-        #         cv2.line(frame, (int(_flags[f]), 0), (int(_flags[f]), _height), (0,0,255), 2)
-        #     else:
-        #         # if int(f) != 1 and int(f) != FLAGS.points:
-        #         cv2.line(frame, (0, int(_flags[f])), (_width, int(_flags[f])), (0,0,255), 2)
-
         # save output video
-        if FLAGS.save_video:
+        if save_video:
             result = np.asarray(frame)
             result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             out.write(result)
@@ -311,14 +296,6 @@ def main(_argv):
         if cv2.waitKey(1) & 0xFF == ord('q'): break
 
     # save csv file
-    # df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Speeds", "Positions", "Timestamps", "Times"])
     df = pd.DataFrame(csv_data, columns = ["ID", "ClassName", "Speed", "Times"])
     df.to_csv(path_csv, index = False, header = True)
 
-    cv2.destroyAllWindows()
-
-if __name__ == '__main__':
-    try:
-        app.run(main)
-    except SystemExit:
-        pass

@@ -1,16 +1,19 @@
 #common
-opencv-python==4.1.1.26
+opencv-python
 easydict
 
 # for server
-absl-py
+absl-py==0.10
 # tensorflow
-tensorflow-gpu==2.3.0
+tensorflow-gpu==2.4.0
 matplotlib
-numpy<1.19.0
+numpy==1.19.2
 pandas
 scipy==1.4.1
 protobuf==3.9.2
+typing-extensions==3.7.4
+six==1.15.0
+blueprint
 
 # for api
 fastapi

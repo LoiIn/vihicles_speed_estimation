@@ -11,7 +11,7 @@ cfg                           = __C
 # YOLO options
 __C.API                     = edict()
 
-__C.API.DB              = "../videos/clients"
+__C.API.VIDEO              = "videos/clients"
 __C.API.PORT            = 3000
 __C.API.ORIGIN          =  [  
                             "http://localhost",
@@ -20,4 +20,4 @@ __C.API.ORIGIN          =  [
                             "http://localhost:8080"
                         ]
                     
-
+__C.API.DB              = "DB"

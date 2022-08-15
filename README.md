@@ -31,7 +31,7 @@ B. Đối với server
     - Tạo thư mực outputs và 3 thư mục con bên trong nó: mp4, csv, imgs 
 
     - Chạy mô hình tính toán
-            python -m speed --input test.mp4 --rwf 5 --rws 12 (--limit) (--save_model)
+            python -m speed --input test.mp4 --rwf 5 --rws 12 (--limit) (--save_video)
 
             Trong đó:
                 +) input: video đầu vào, đường dẫn đang được set mặc định là ./data/videos/... Có thể chỉnh trong file ./core/config.py
